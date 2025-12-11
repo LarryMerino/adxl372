@@ -65,19 +65,19 @@ impl Bandwidth {
 #[bits = 3]
 pub enum FifoFormat {
     /// All axes interleaved (X, Y, Z).
-    Xyz = 0b000,
+    XYZ = 0b000,
     /// X-axis samples only.
     X = 0b001,
     /// Y-axis samples only.
     Y = 0b010,
     /// X and Y axes interleaved.
-    Xy = 0b011,
+    XY = 0b011,
     /// Z-axis samples only.
     Z = 0b100,
     /// X and Z axes interleaved.
-    Xz = 0b101,
+    XZ = 0b101,
     /// Y and Z axes interleaved.
-    Yz = 0b110,
+    YZ = 0b110,
     /// Peak acceleration reporting.
     Peak = 0b111,
 }
@@ -87,8 +87,8 @@ impl FifoFormat {
     pub const fn axis_count(self) -> u8 {
         match self {
             Self::X | Self::Y | Self::Z => 1,
-            Self::Xy | Self::Xz | Self::Yz => 2,
-            Self::Xyz | Self::Peak => 3,
+            Self::XY | Self::XZ | Self::YZ => 2,
+            Self::XYZ | Self::Peak => 3,
         }
     }
 }

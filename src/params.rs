@@ -15,8 +15,8 @@ pub enum OutputDataRate {
     Od1600Hz = 0b010,
     /// 3200 Hz output data rate.
     Od3200Hz = 0b011,
-    /// 4000 Hz output data rate.
-    Od4000Hz = 0b100,
+    /// 6400 Hz output data rate.
+    Od6400Hz = 0b100,
 }
 
 impl OutputDataRate {
@@ -27,7 +27,7 @@ impl OutputDataRate {
             Self::Od800Hz => 800,
             Self::Od1600Hz => 1_600,
             Self::Od3200Hz => 3_200,
-            Self::Od4000Hz => 4_000,
+            Self::Od6400Hz => 6_400,
         }
     }
 }
@@ -277,10 +277,10 @@ impl HighPassCorner {
             (OutputDataRate::Od3200Hz, Self::Corner1) => 7.79,
             (OutputDataRate::Od3200Hz, Self::Corner2) => 3.94,
             (OutputDataRate::Od3200Hz, Self::Corner3) => 1.98,
-            (OutputDataRate::Od4000Hz, Self::Corner0) => 30.48,
-            (OutputDataRate::Od4000Hz, Self::Corner1) => 15.58,
-            (OutputDataRate::Od4000Hz, Self::Corner2) => 7.88,
-            (OutputDataRate::Od4000Hz, Self::Corner3) => 3.96,
+            (OutputDataRate::Od6400Hz, Self::Corner0) => 30.48,
+            (OutputDataRate::Od6400Hz, Self::Corner1) => 15.58,
+            (OutputDataRate::Od6400Hz, Self::Corner2) => 7.88,
+            (OutputDataRate::Od6400Hz, Self::Corner3) => 3.96,
         }
     }
 

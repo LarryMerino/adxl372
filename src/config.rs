@@ -30,7 +30,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            odr: OutputDataRate::Od4000Hz,
+            odr: OutputDataRate::Od6400Hz,
             bandwidth: Bandwidth::Bw1600Hz,
         }
     }

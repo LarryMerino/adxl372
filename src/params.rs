@@ -223,8 +223,6 @@ pub enum LinkLoopMode {
     Linked = 0b01,
     /// Loop mode.
     Loop = 0b10,
-    /// Reserved combination.
-    Reserved = 0b11,
 }
 
 /// Operating power modes encoded in `POWER_CTL[1:0]`.

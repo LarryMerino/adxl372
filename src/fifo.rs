@@ -2,6 +2,7 @@
 
 use crate::error::Result;
 use crate::interface::Adxl372Interface;
+use crate::params::{FifoFormat, FifoMode};
 
 /// A decoded FIFO sample.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -14,6 +15,28 @@ pub struct Sample {
     pub z: Option<i16>,
     /// Indicates whether this sample corresponds to a peak event.
     pub is_peak: bool,
+}
+
+/// Snapshot of the FIFO control configuration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FifoSettings {
+    /// FIFO watermark level expressed in samples.
+    pub watermark: u16,
+    /// FIFO operating mode.
+    pub mode: FifoMode,
+    /// FIFO packing format.
+    pub format: FifoFormat,
+}
+
+impl FifoSettings {
+    /// Creates a new settings snapshot.
+    pub const fn new(watermark: u16, mode: FifoMode, format: FifoFormat) -> Self {
+        Self {
+            watermark,
+            mode,
+            format,
+        }
+    }
 }
 
 impl Default for Sample {

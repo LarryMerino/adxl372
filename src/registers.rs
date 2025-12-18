@@ -57,12 +57,28 @@ pub const REG_SELF_TEST: u8 = 0x40;
 /// Register address of `RESET`.
 pub const REG_RESET: u8 = 0x41;
 
-/// Expected value in `DEVID_AD`.
-pub const DEVICE_ID: u8 = 0xAD;
-/// Expected value in `DEVID_MST`.
-pub const MEMS_ID: u8 = 0x1D;
-/// Expected value in `PARTID`.
-pub const PART_ID: u8 = 0xFA;
+/// Access permissions encoded for each register.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RegisterAccess {
+    /// Read-only register.
+    ReadOnly,
+    /// Write-only register.
+    WriteOnly,
+    /// Read/write register.
+    ReadWrite,
+}
+
+/// Minimal metadata exposed by every register value type.
+pub trait Register {
+    /// Raw storage backing the register payload.
+    type Raw: Copy;
+    /// Register address as documented in the datasheet.
+    const ADDRESS: u8;
+    /// Access permission classification.
+    const ACCESS: RegisterAccess;
+    /// Optional reset/default value defined by the datasheet.
+    const RESET_VALUE: Option<Self::Raw>;
+}
 
 /// Bitfield representation of the `STATUS` register (address `0x04`).
 #[allow(unused_parens)]
@@ -99,6 +115,18 @@ impl Status {
     }
 }
 
+impl From<u8> for Status {
+    fn from(value: u8) -> Self {
+        Self::from_raw(value)
+    }
+}
+
+impl From<Status> for u8 {
+    fn from(value: Status) -> Self {
+        value.into_raw()
+    }
+}
+
 /// Bitfield representation of the `STATUS2` register (address `0x05`).
 #[allow(unused_parens)]
 #[bitfield]
@@ -125,6 +153,18 @@ impl Status2 {
     /// Serialises the bitfield back into a raw byte.
     pub fn into_raw(self) -> u8 {
         self.into_bytes()[0]
+    }
+}
+
+impl From<u8> for Status2 {
+    fn from(value: u8) -> Self {
+        Self::from_raw(value)
+    }
+}
+
+impl From<Status2> for u8 {
+    fn from(value: Status2) -> Self {
+        value.into_raw()
     }
 }
 
@@ -173,6 +213,18 @@ impl FifoControl {
     }
 }
 
+impl From<u8> for FifoControl {
+    fn from(value: u8) -> Self {
+        Self::from_raw(value)
+    }
+}
+
+impl From<FifoControl> for u8 {
+    fn from(value: FifoControl) -> Self {
+        value.into_raw()
+    }
+}
+
 /// Bitfield representation of the `TIMING` register (address `0x3D`).
 #[allow(unused_parens)]
 #[bitfield]
@@ -197,6 +249,18 @@ impl Timing {
     /// Serialises the bitfield back into a raw byte.
     pub fn into_raw(self) -> u8 {
         self.into_bytes()[0]
+    }
+}
+
+impl From<u8> for Timing {
+    fn from(value: u8) -> Self {
+        Self::from_raw(value)
+    }
+}
+
+impl From<Timing> for u8 {
+    fn from(value: Timing) -> Self {
+        value.into_raw()
     }
 }
 
@@ -226,6 +290,18 @@ impl Measure {
     /// Serialises the bitfield back into a raw byte.
     pub fn into_raw(self) -> u8 {
         self.into_bytes()[0]
+    }
+}
+
+impl From<u8> for Measure {
+    fn from(value: u8) -> Self {
+        Self::from_raw(value)
+    }
+}
+
+impl From<Measure> for u8 {
+    fn from(value: Measure) -> Self {
+        value.into_raw()
     }
 }
 
@@ -262,6 +338,18 @@ impl PowerControl {
     }
 }
 
+impl From<u8> for PowerControl {
+    fn from(value: u8) -> Self {
+        Self::from_raw(value)
+    }
+}
+
+impl From<PowerControl> for u8 {
+    fn from(value: PowerControl) -> Self {
+        value.into_raw()
+    }
+}
+
 /// Bitfield representation of the `SELF_TEST` register (address `0x40`).
 #[allow(unused_parens)]
 #[bitfield]
@@ -287,6 +375,66 @@ impl SelfTest {
     pub fn into_raw(self) -> u8 {
         self.into_bytes()[0]
     }
+}
+impl From<u8> for SelfTest {
+    fn from(value: u8) -> Self {
+        Self::from_raw(value)
+    }
+}
+
+impl From<SelfTest> for u8 {
+    fn from(value: SelfTest) -> Self {
+        value.into_raw()
+    }
+}
+
+impl Register for Status {
+    type Raw = u8;
+    const ADDRESS: u8 = REG_STATUS;
+    const ACCESS: RegisterAccess = RegisterAccess::ReadOnly;
+    const RESET_VALUE: Option<Self::Raw> = Some(0xA0);
+}
+
+impl Register for Status2 {
+    type Raw = u8;
+    const ADDRESS: u8 = REG_STATUS2;
+    const ACCESS: RegisterAccess = RegisterAccess::ReadOnly;
+    const RESET_VALUE: Option<Self::Raw> = Some(0x00);
+}
+
+impl Register for FifoControl {
+    type Raw = u8;
+    const ADDRESS: u8 = REG_FIFO_CTL;
+    const ACCESS: RegisterAccess = RegisterAccess::ReadWrite;
+    const RESET_VALUE: Option<Self::Raw> = Some(0x00);
+}
+
+impl Register for Timing {
+    type Raw = u8;
+    const ADDRESS: u8 = REG_TIMING;
+    const ACCESS: RegisterAccess = RegisterAccess::ReadWrite;
+    const RESET_VALUE: Option<Self::Raw> = Some(0x00);
+}
+
+impl Register for Measure {
+    type Raw = u8;
+    const ADDRESS: u8 = REG_MEASURE;
+    const ACCESS: RegisterAccess = RegisterAccess::ReadWrite;
+    const RESET_VALUE: Option<Self::Raw> = Some(0x00);
+}
+
+impl Register for PowerControl {
+    type Raw = u8;
+    const ADDRESS: u8 = REG_POWER_CTL;
+    const ACCESS: RegisterAccess = RegisterAccess::ReadWrite;
+    const RESET_VALUE: Option<Self::Raw> = Some(0x00);
+}
+
+impl Register for SelfTest {
+    type Raw = u8;
+    const ADDRESS: u8 = REG_SELF_TEST;
+    const ACCESS: RegisterAccess = RegisterAccess::ReadWrite;
+    const RESET_VALUE: Option<Self::Raw> = Some(0x00);
 }
 
 /// Encodes the FIFO entry count from the upper and lower registers.

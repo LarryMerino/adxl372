@@ -10,6 +10,8 @@ pub enum Error<E> {
     Interface(E),
     /// The provided configuration parameters are invalid.
     InvalidConfig,
+    /// The requested operation is not available yet.
+    NotReady,
 }
 
 impl<E> From<E> for Error<E> {

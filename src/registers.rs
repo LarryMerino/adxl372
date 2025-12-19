@@ -456,6 +456,7 @@ pub const RESET_COMMAND: u8 = 0x52;
 mod tests {
     use super::*;
 
+    /// Validates that Status bitfields match the datasheet layout.
     #[test]
     fn status_layout_matches_datasheet() {
         let status = Status::from_raw(0b1010_0000);
@@ -468,6 +469,7 @@ mod tests {
         assert!(status.err_user_regs());
     }
 
+    /// Ensures Timing encodes and decodes as expected across all fields.
     #[test]
     fn timing_roundtrip() {
         let timing = Timing::new()

@@ -167,6 +167,7 @@ mod tests {
         Write { command: u8, payload: &'a [u8] },
     }
 
+    /// Ensures read_many emits the encoded command and fills the destination buffer.
     #[test]
     fn read_many_transfers_command_and_fills_buffer() {
         let expectations = [TransactionExpectation::Read {
@@ -181,6 +182,7 @@ mod tests {
         assert_eq!(buffer, [0xAA, 0x55]);
     }
 
+    /// Verifies write_many prefixes payload bytes with the correct command.
     #[test]
     fn write_many_transfers_command_and_payload() {
         let expectations = [TransactionExpectation::Write {
@@ -195,6 +197,7 @@ mod tests {
             .unwrap();
     }
 
+    /// Confirms read_register is implemented via read_many to avoid duplicated logic.
     #[test]
     fn read_register_reuses_read_many() {
         let expectations = [TransactionExpectation::Read {
@@ -208,6 +211,7 @@ mod tests {
         assert_eq!(value, 0x5A);
     }
 
+    /// Confirms write_register delegates to write_many so command framing stays consistent.
     #[test]
     fn write_register_reuses_write_many() {
         let expectations = [TransactionExpectation::Write {
@@ -220,6 +224,7 @@ mod tests {
         interface.write_register(0x01, 0x7E).unwrap();
     }
 
+    /// Verifies read_many short-circuits when given an empty slice.
     #[test]
     fn read_many_ignores_empty_buffer() {
         let expectations: [TransactionExpectation; 0] = [];
@@ -229,6 +234,7 @@ mod tests {
         interface.read_many(0x08, &mut []).unwrap();
     }
 
+    /// Verifies write_many skips the transaction when payload is empty.
     #[test]
     fn write_many_ignores_empty_payload() {
         let expectations: [TransactionExpectation; 0] = [];

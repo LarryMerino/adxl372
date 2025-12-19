@@ -103,27 +103,15 @@ pub struct Status {
     pub err_user_regs: bool,
 }
 
-impl Status {
-    /// Constructs the bitfield from a raw byte.
-    pub fn from_raw(value: u8) -> Self {
-        Self::from_bytes([value])
-    }
-
-    /// Serialises the bitfield back into a raw byte.
-    pub fn into_raw(self) -> u8 {
-        self.into_bytes()[0]
-    }
-}
-
 impl From<u8> for Status {
     fn from(value: u8) -> Self {
-        Self::from_raw(value)
+        Self::from_bytes([value])
     }
 }
 
 impl From<Status> for u8 {
     fn from(value: Status) -> Self {
-        value.into_raw()
+        value.into_bytes()[0]
     }
 }
 
@@ -144,27 +132,15 @@ pub struct Status2 {
     __: B1,
 }
 
-impl Status2 {
-    /// Constructs the bitfield from a raw byte.
-    pub fn from_raw(value: u8) -> Self {
-        Self::from_bytes([value])
-    }
-
-    /// Serialises the bitfield back into a raw byte.
-    pub fn into_raw(self) -> u8 {
-        self.into_bytes()[0]
-    }
-}
-
 impl From<u8> for Status2 {
     fn from(value: u8) -> Self {
-        Self::from_raw(value)
+        Self::from_bytes([value])
     }
 }
 
 impl From<Status2> for u8 {
     fn from(value: Status2) -> Self {
-        value.into_raw()
+        value.into_bytes()[0]
     }
 }
 
@@ -201,27 +177,15 @@ pub struct FifoControl {
     __: B2,
 }
 
-impl FifoControl {
-    /// Constructs the bitfield from a raw byte.
-    pub fn from_raw(value: u8) -> Self {
-        Self::from_bytes([value])
-    }
-
-    /// Serialises the bitfield back into a raw byte.
-    pub fn into_raw(self) -> u8 {
-        self.into_bytes()[0]
-    }
-}
-
 impl From<u8> for FifoControl {
     fn from(value: u8) -> Self {
-        Self::from_raw(value)
+        Self::from_bytes([value])
     }
 }
 
 impl From<FifoControl> for u8 {
     fn from(value: FifoControl) -> Self {
-        value.into_raw()
+        value.into_bytes()[0]
     }
 }
 
@@ -240,27 +204,15 @@ pub struct Timing {
     pub odr: OutputDataRate,
 }
 
-impl Timing {
-    /// Constructs the bitfield from a raw byte.
-    pub fn from_raw(value: u8) -> Self {
-        Self::from_bytes([value])
-    }
-
-    /// Serialises the bitfield back into a raw byte.
-    pub fn into_raw(self) -> u8 {
-        self.into_bytes()[0]
-    }
-}
-
 impl From<u8> for Timing {
     fn from(value: u8) -> Self {
-        Self::from_raw(value)
+        Self::from_bytes([value])
     }
 }
 
 impl From<Timing> for u8 {
     fn from(value: Timing) -> Self {
-        value.into_raw()
+        value.into_bytes()[0]
     }
 }
 
@@ -281,27 +233,15 @@ pub struct Measure {
     pub user_or_disable: bool,
 }
 
-impl Measure {
-    /// Constructs the bitfield from a raw byte.
-    pub fn from_raw(value: u8) -> Self {
-        Self::from_bytes([value])
-    }
-
-    /// Serialises the bitfield back into a raw byte.
-    pub fn into_raw(self) -> u8 {
-        self.into_bytes()[0]
-    }
-}
-
 impl From<u8> for Measure {
     fn from(value: u8) -> Self {
-        Self::from_raw(value)
+        Self::from_bytes([value])
     }
 }
 
 impl From<Measure> for u8 {
     fn from(value: Measure) -> Self {
-        value.into_raw()
+        value.into_bytes()[0]
     }
 }
 
@@ -326,27 +266,15 @@ pub struct PowerControl {
     pub i2c_high_speed_enable: bool,
 }
 
-impl PowerControl {
-    /// Constructs the bitfield from a raw byte.
-    pub fn from_raw(value: u8) -> Self {
-        Self::from_bytes([value])
-    }
-
-    /// Serialises the bitfield back into a raw byte.
-    pub fn into_raw(self) -> u8 {
-        self.into_bytes()[0]
-    }
-}
-
 impl From<u8> for PowerControl {
     fn from(value: u8) -> Self {
-        Self::from_raw(value)
+        Self::from_bytes([value])
     }
 }
 
 impl From<PowerControl> for u8 {
     fn from(value: PowerControl) -> Self {
-        value.into_raw()
+        value.into_bytes()[0]
     }
 }
 
@@ -365,26 +293,15 @@ pub struct SelfTest {
     __: B5,
 }
 
-impl SelfTest {
-    /// Constructs the bitfield from a raw byte.
-    pub fn from_raw(value: u8) -> Self {
-        Self::from_bytes([value])
-    }
-
-    /// Serialises the bitfield back into a raw byte.
-    pub fn into_raw(self) -> u8 {
-        self.into_bytes()[0]
-    }
-}
 impl From<u8> for SelfTest {
     fn from(value: u8) -> Self {
-        Self::from_raw(value)
+        Self::from_bytes([value])
     }
 }
 
 impl From<SelfTest> for u8 {
     fn from(value: SelfTest) -> Self {
-        value.into_raw()
+        value.into_bytes()[0]
     }
 }
 
@@ -459,7 +376,7 @@ mod tests {
     /// Validates that Status bitfields match the datasheet layout.
     #[test]
     fn status_layout_matches_datasheet() {
-        let status = Status::from_raw(0b1010_0000);
+        let status = Status::from(0b1010_0000);
         assert!(!status.data_ready());
         assert!(!status.fifo_ready());
         assert!(!status.fifo_full());
@@ -478,8 +395,8 @@ mod tests {
             .with_wake_up_rate(WakeUpRate::Ms512)
             .with_odr(OutputDataRate::Od1600Hz);
 
-        assert_eq!(timing.into_raw(), 0b010_011_0_1);
-        let decoded = Timing::from_raw(timing.into_raw());
+        assert_eq!(u8::from(timing), 0b010_011_0_1);
+        let decoded = Timing::from(u8::from(timing));
         assert_eq!(decoded.wake_up_rate(), WakeUpRate::Ms512);
         assert_eq!(decoded.odr(), OutputDataRate::Od1600Hz);
         assert_eq!(decoded.ext_sync(), ExtSync::Enabled);

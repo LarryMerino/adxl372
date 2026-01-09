@@ -369,6 +369,13 @@ pub fn split_fifo_entry_count(count: u16) -> (FifoEntriesUpper, u8) {
 /// Soft reset command value written to the `RESET` register.
 pub const RESET_COMMAND: u8 = 0x52;
 
+/// Expected value returned by the `DEVID_AD` register (`0x00`).
+pub const EXPECTED_DEVID_AD: u8 = 0xAD;
+/// Expected value returned by the `DEVID_MST` register (`0x01`).
+pub const EXPECTED_DEVID_MST: u8 = 0x1D;
+/// Expected value returned by the `PARTID` register (`0x02`).
+pub const EXPECTED_PART_ID: u8 = 0xFA;
+
 #[cfg(test)]
 mod tests {
     use super::*;

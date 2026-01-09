@@ -19,7 +19,18 @@ use crate::params::{
     SettleFilter,
     WakeUpRate,
 };
-use crate::registers::{Status, Status2};
+use crate::registers::{
+    PowerControl,
+    Status,
+    Status2,
+    EXPECTED_DEVID_AD,
+    EXPECTED_DEVID_MST,
+    EXPECTED_PART_ID,
+    REG_DEVID_AD,
+    RESET_COMMAND,
+    REG_POWER_CTL,
+    REG_RESET,
+};
 use crate::self_test::{run_self_test, SelfTestReport};
 use embedded_hal::spi::SpiDevice;
 
@@ -91,12 +102,33 @@ where
 
     /// Issues a soft reset sequence.
     pub fn reset(&mut self) -> Result<(), CommE> {
-        Err(Error::NotReady)
+        self
+            .interface
+            .write_register(REG_RESET, RESET_COMMAND)
+            .map_err(Error::from)
     }
 
     /// Reads the identification registers and returns raw bytes.
     pub fn device_id(&mut self) -> Result<[u8; 4], CommE> {
         Err(Error::NotReady)
+    }
+
+    /// Verifies identification registers against the expected ADXL372 constants.
+    pub fn check_ids(&mut self) -> Result<u8, CommE> {
+        let mut ids = [0u8; 4];
+        self
+            .interface
+            .read_many(REG_DEVID_AD, &mut ids)
+            .map_err(Error::from)?;
+
+        if ids[0] != EXPECTED_DEVID_AD
+            || ids[1] != EXPECTED_DEVID_MST
+            || ids[2] != EXPECTED_PART_ID
+        {
+            return Err(Error::DeviceIdMismatch);
+        }
+
+        Ok(ids[3])
     }
 
     /// Returns the raw status register bitfields.
@@ -111,8 +143,22 @@ where
 
     /// Places the sensor in the requested power mode.
     pub fn set_power_mode(&mut self, mode: PowerMode) -> Result<(), CommE> {
-        let _ = mode;
-        Err(Error::NotReady)
+        let current = self
+            .interface
+            .read_register(REG_POWER_CTL)
+            .map_err(Error::from)?;
+
+        let updated = PowerControl::from(current).with_mode(mode);
+        let encoded = u8::from(updated);
+
+        if encoded != current {
+            self
+                .interface
+                .write_register(REG_POWER_CTL, encoded)
+                .map_err(Error::from)?;
+        }
+
+        Ok(())
     }
 
     /// Updates timing-related register fields.

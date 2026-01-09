@@ -12,6 +12,8 @@ pub enum Error<E> {
     InvalidConfig,
     /// The requested operation is not available yet.
     NotReady,
+    /// The peripheral did not report the expected identification values.
+    DeviceIdMismatch,
 }
 
 impl<E> From<E> for Error<E> {

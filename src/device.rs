@@ -27,9 +27,10 @@ use crate::registers::{
     EXPECTED_DEVID_MST,
     EXPECTED_PART_ID,
     REG_DEVID_AD,
-    RESET_COMMAND,
     REG_POWER_CTL,
     REG_RESET,
+    REG_STATUS,
+    RESET_COMMAND,
 };
 use crate::self_test::{run_self_test, SelfTestReport};
 use embedded_hal::spi::SpiDevice;
@@ -38,6 +39,69 @@ use embedded_hal::spi::SpiDevice;
 pub struct Adxl372<IFACE> {
     interface: IFACE,
     config: Config,
+}
+
+/// Combined view of the `STATUS` and `STATUS2` registers with explicit flags.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StatusSnapshot {
+    /// STATUS[7] ERR_USER_REGS.
+    pub err_user_regs: bool,
+    /// STATUS[6] AWAKE.
+    pub awake: bool,
+    /// STATUS[5] USER_NVM_BUSY.
+    pub user_nvm_busy: bool,
+    /// STATUS[3] FIFO_OVR.
+    pub fifo_ovr: bool,
+    /// STATUS[2] FIFO_FULL.
+    pub fifo_full: bool,
+    /// STATUS[1] FIFO_RDY.
+    pub fifo_rdy: bool,
+    /// STATUS[0] DATA_RDY.
+    pub data_rdy: bool,
+    /// STATUS2[6] ACTIVITY2.
+    pub activity2: bool,
+    /// STATUS2[5] ACTIVITY.
+    pub activity: bool,
+    /// STATUS2[4] INACT.
+    pub inact: bool,
+}
+
+impl StatusSnapshot {
+    /// Builds a snapshot from the raw STATUS and STATUS2 bitfields.
+    pub fn from_registers(status: Status, status2: Status2) -> Self {
+        Self {
+            err_user_regs: status.err_user_regs(),
+            awake: status.awake(),
+            user_nvm_busy: status.user_nvm_busy(),
+            fifo_ovr: status.fifo_overrun(),
+            fifo_full: status.fifo_full(),
+            fifo_rdy: status.fifo_ready(),
+            data_rdy: status.data_ready(),
+            activity2: status2.activity2(),
+            activity: status2.activity(),
+            inact: status2.inactivity(),
+        }
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for StatusSnapshot {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(
+            f,
+            "StatusSnapshot {{\n    ERR_USER_REGS: {},\n    AWAKE: {},\n    USER_NVM_BUSY: {},\n    FIFO_OVR: {},\n    FIFO_FULL: {},\n    FIFO_RDY: {},\n    DATA_RDY: {},\n    ACTIVITY2: {},\n    ACTIVITY: {},\n    INACT: {}\n}}",
+            self.err_user_regs,
+            self.awake,
+            self.user_nvm_busy,
+            self.fifo_ovr,
+            self.fifo_full,
+            self.fifo_rdy,
+            self.data_rdy,
+            self.activity2,
+            self.activity,
+            self.inact
+        );
+    }
 }
 
 impl<IFACE> Adxl372<IFACE> {
@@ -131,9 +195,18 @@ where
         Ok(ids[3])
     }
 
-    /// Returns the raw status register bitfields.
-    pub fn read_status(&mut self) -> Result<(Status, Status2), CommE> {
-        Err(Error::NotReady)
+    /// Returns a snapshot of the `STATUS` and `STATUS2` registers.
+    pub fn read_status(&mut self) -> Result<StatusSnapshot, CommE> {
+        let mut raw = [0u8; 2];
+        self
+            .interface
+            .read_many(REG_STATUS, &mut raw)
+            .map_err(Error::from)?;
+
+        let status = Status::from(raw[0]);
+        let status2 = Status2::from(raw[1]);
+
+        Ok(StatusSnapshot::from_registers(status, status2))
     }
 
     /// Snapshot of FIFO configuration registers.

@@ -34,6 +34,10 @@ use crate::registers::{
 };
 use crate::self_test::{run_self_test, SelfTestReport};
 use embedded_hal::spi::SpiDevice;
+use embedded_hal::delay::DelayNs;
+
+// ADXL372 datasheet power-up to standby delay (milliseconds).
+const POWER_UP_TO_STANDBY_DELAY_MS: u32 = 5;
 
 /// High-level synchronous driver for the ADXL372 accelerometer.
 pub struct Adxl372<IFACE> {
@@ -142,8 +146,16 @@ where
     IFACE: Adxl372Interface<Error = CommE>,
 {
     /// Initializes the sensor using the current configuration.
-    pub fn init(&mut self) -> Result<(), CommE> {
+    ///
+    /// Enforces the datasheet power-up-to-standby delay before issuing any commands so callers
+    /// do not need to provide their own wait after reset or power ramp.
+    pub fn init(&mut self, delay: &mut impl DelayNs) -> Result<(), CommE> {
         self.config.validate().map_err(|_| Error::InvalidConfig)?;
+
+        delay.delay_ms(POWER_UP_TO_STANDBY_DELAY_MS);
+        self.set_power_mode(PowerMode::Standby, delay)?;
+        self.reset()?;
+
         Ok(())
     }
 
@@ -215,7 +227,7 @@ where
     }
 
     /// Places the sensor in the requested power mode.
-    pub fn set_power_mode(&mut self, mode: PowerMode) -> Result<(), CommE> {
+    pub fn set_power_mode(&mut self, mode: PowerMode, delay: &mut impl DelayNs) -> Result<(), CommE> {
         let current = self
             .interface
             .read_register(REG_POWER_CTL)

@@ -30,6 +30,7 @@ use crate::registers::{
     REG_POWER_CTL,
     REG_RESET,
     REG_STATUS,
+    REG_XDATA_H,
     RESET_COMMAND,
 };
 use crate::self_test::{run_self_test, SelfTestReport};
@@ -38,6 +39,8 @@ use embedded_hal::delay::DelayNs;
 
 // ADXL372 datasheet power-up to standby delay (milliseconds).
 const POWER_UP_TO_STANDBY_DELAY_MS: u32 = 5;
+// Number of consecutive bytes spanning X, Y, Z axis samples.
+const RAW_AXIS_BYTES: usize = 6;
 
 /// High-level synchronous driver for the ADXL372 accelerometer.
 pub struct Adxl372<IFACE> {
@@ -302,9 +305,25 @@ where
         Err(Error::NotReady)
     }
 
+    #[inline]
+    fn unpack_axis(msb: u8, lsb: u8) -> i16 {
+        // Sensor outputs 12-bit left-justified two's complement data.
+        i16::from_be_bytes([msb, lsb]) >> 4
+    }
+
     /// Reads a raw acceleration triplet.
     pub fn read_xyz_raw(&mut self) -> Result<[i16; 3], CommE> {
-        Err(Error::NotReady)
+        let mut raw = [0u8; RAW_AXIS_BYTES];
+        self
+            .interface
+            .read_many(REG_XDATA_H, &mut raw)
+            .map_err(Error::from)?;
+
+        let x = Self::unpack_axis(raw[0], raw[1]);
+        let y = Self::unpack_axis(raw[2], raw[3]);
+        let z = Self::unpack_axis(raw[4], raw[5]);
+
+        Ok([x, y, z])
     }
 
     /// Returns acceleration scaled in milli-g.

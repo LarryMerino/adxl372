@@ -45,6 +45,8 @@ pub enum Bandwidth {
     Bw800Hz = 0b010,
     /// 1600 Hz bandwidth.
     Bw1600Hz = 0b011,
+    /// 3200 Hz bandwidth.
+    Bw3200Hz = 0b100
 }
 
 impl Bandwidth {
@@ -55,6 +57,7 @@ impl Bandwidth {
             Self::Bw400Hz => 400,
             Self::Bw800Hz => 800,
             Self::Bw1600Hz => 1_600,
+            Self::Bw3200Hz => 3_200
         }
     }
 }

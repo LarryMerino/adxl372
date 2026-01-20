@@ -20,6 +20,7 @@ use crate::params::{
     WakeUpRate,
 };
 use crate::registers::{
+    Measure,
     PowerControl,
     Status,
     Status2,
@@ -28,6 +29,7 @@ use crate::registers::{
     EXPECTED_DEVID_MST,
     EXPECTED_PART_ID,
     REG_DEVID_AD,
+    REG_MEASURE,
     REG_POWER_CTL,
     REG_RESET,
     REG_STATUS,
@@ -179,6 +181,7 @@ where
         config.validate().map_err(|_| Error::InvalidConfig)?;
 
         self.apply_timing_config(&config)?;
+        self.apply_measurement_config(&config)?;
 
         self.config = config;
         Ok(())
@@ -299,10 +302,41 @@ where
         low_noise: Option<LowNoise>,
         bandwidth: Option<Bandwidth>,
     ) -> Result<(), CommE> {
-        let _ = linkloop;
-        let _ = low_noise;
-        let _ = bandwidth;
-        Err(Error::NotReady)
+        if let Some(bw) = bandwidth {
+            if bw.max_hz() * 2 > self.config.odr.hz() {
+                return Err(Error::InvalidConfig);
+            }
+        }
+
+        let current = self
+            .interface
+            .read_register(REG_MEASURE)
+            .map_err(Error::from)?;
+
+        let mut measure = Measure::from(current);
+
+        if let Some(mode) = linkloop {
+            measure.set_link_loop_mode(mode);
+        }
+
+        if let Some(noise) = low_noise {
+            measure.set_low_noise(noise);
+        }
+
+        if let Some(bw) = bandwidth {
+            measure.set_bandwidth(bw);
+            self.config.bandwidth = bw;
+        }
+
+        let updated = u8::from(measure);
+        if updated != current {
+            self
+                .interface
+                .write_register(REG_MEASURE, updated)
+                .map_err(Error::from)?;
+        }
+
+        Ok(())
     }
 
     /// Sets the instant-on threshold selection.
@@ -409,8 +443,23 @@ where
 
     #[allow(dead_code)]
     fn apply_measurement_config(&mut self, config: &Config) -> Result<(), CommE> {
-        let _ = config;
-        Err(Error::NotReady)
+        let current = self
+            .interface
+            .read_register(REG_MEASURE)
+            .map_err(Error::from)?;
+
+        let mut measure = Measure::from(current);
+        measure.set_bandwidth(config.bandwidth);
+
+        let updated = u8::from(measure);
+        if updated != current {
+            self
+                .interface
+                .write_register(REG_MEASURE, updated)
+                .map_err(Error::from)?;
+        }
+
+        Ok(())
     }
 
     #[allow(dead_code)]

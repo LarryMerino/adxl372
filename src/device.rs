@@ -275,11 +275,56 @@ where
         ext_clk: Option<ExtClk>,
         ext_sync: Option<ExtSync>,
     ) -> Result<(), CommE> {
-        let _ = odr;
-        let _ = wakeup_rate;
-        let _ = ext_clk;
-        let _ = ext_sync;
-        Err(Error::NotReady)
+        if let Some(new_odr) = odr {
+            if self.config.bandwidth.max_hz() * 2 > new_odr.hz() {
+                return Err(Error::InvalidConfig);
+            }
+        }
+
+        let current = self
+            .interface
+            .read_register(REG_TIMING)
+            .map_err(Error::from)?;
+
+        let mut timing = Timing::from(current);
+
+        if let Some(new_odr) = odr {
+            timing.set_odr(new_odr);
+            self.config.odr = new_odr;
+        }
+
+        if let Some(rate) = wakeup_rate {
+            timing.set_wake_up_rate(rate);
+            self.config.wakeup_rate = Some(rate);
+        }
+
+        if let Some(clk) = ext_clk {
+            timing.set_ext_clk(clk);
+            self.config.ext_clk = if clk == ExtClk::Disabled {
+                None
+            } else {
+                Some(clk)
+            };
+        }
+
+        if let Some(sync) = ext_sync {
+            timing.set_ext_sync(sync);
+            self.config.ext_sync = if sync == ExtSync::Disabled {
+                None
+            } else {
+                Some(sync)
+            };
+        }
+
+        let updated = u8::from(timing);
+        if updated != current {
+            self
+                .interface
+                .write_register(REG_TIMING, updated)
+                .map_err(Error::from)?;
+        }
+
+        Ok(())
     }
 
     /// Updates FIFO format, mode, or watermark.

@@ -158,11 +158,21 @@ where
         delay.delay_ms(POWER_UP_TO_STANDBY_DELAY_MS);
         self.set_power_mode(PowerMode::Standby, delay)?;
         self.reset()?;
-
+        
         Ok(())
     }
 
     /// Applies a new configuration to the device.
+    ///
+    /// Planned helper pipeline for the forthcoming register programming:
+    /// 1. `apply_timing_config()` – programs `TIMING` (ODR, wake-up rate, ext sync/clk)
+    /// 2. `apply_measurement_config()` – programs `MEASURE` (bandwidth, noise, link/loop)
+    /// 3. `apply_power_control_config()` – programs `POWER_CTL` fields unrelated to mode
+    /// 4. `apply_fifo_config()` – programs `FIFO_CTL` and watermark registers
+    /// 5. `apply_activity_config()` – programs activity/inactivity threshold windows
+    /// 6. `apply_interrupt_config()` – programs interrupt/fault signaling behaviour
+    ///
+    /// Each helper will be wired up once its corresponding register logic is implemented.
     pub fn configure(&mut self, config: Config) -> Result<(), CommE> {
         config.validate().map_err(|_| Error::InvalidConfig)?;
         self.config = config;
@@ -356,5 +366,45 @@ where
     /// Executes the datasheet self-test routine.
     pub fn run_self_test(&mut self) -> Result<SelfTestReport, CommE> {
         run_self_test(self)
+    }
+
+    // ---------------------------------------------------------------------
+    // Configuration helper stubs – to be implemented alongside register logic
+    // ---------------------------------------------------------------------
+
+    #[allow(dead_code)]
+    fn apply_timing_config(&mut self, config: &Config) -> Result<(), CommE> {
+        let _ = config;
+        Err(Error::NotReady)
+    }
+
+    #[allow(dead_code)]
+    fn apply_measurement_config(&mut self, config: &Config) -> Result<(), CommE> {
+        let _ = config;
+        Err(Error::NotReady)
+    }
+
+    #[allow(dead_code)]
+    fn apply_power_control_config(&mut self, config: &Config) -> Result<(), CommE> {
+        let _ = config;
+        Err(Error::NotReady)
+    }
+
+    #[allow(dead_code)]
+    fn apply_fifo_config(&mut self, config: &Config) -> Result<(), CommE> {
+        let _ = config;
+        Err(Error::NotReady)
+    }
+
+    #[allow(dead_code)]
+    fn apply_activity_config(&mut self, config: &Config) -> Result<(), CommE> {
+        let _ = config;
+        Err(Error::NotReady)
+    }
+
+    #[allow(dead_code)]
+    fn apply_interrupt_config(&mut self, config: &Config) -> Result<(), CommE> {
+        let _ = config;
+        Err(Error::NotReady)
     }
 }

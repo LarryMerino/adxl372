@@ -23,6 +23,7 @@ use crate::registers::{
     PowerControl,
     Status,
     Status2,
+    Timing,
     EXPECTED_DEVID_AD,
     EXPECTED_DEVID_MST,
     EXPECTED_PART_ID,
@@ -30,6 +31,7 @@ use crate::registers::{
     REG_POWER_CTL,
     REG_RESET,
     REG_STATUS,
+    REG_TIMING,
     REG_XDATA_H,
     RESET_COMMAND,
 };
@@ -175,6 +177,9 @@ where
     /// Each helper will be wired up once its corresponding register logic is implemented.
     pub fn configure(&mut self, config: Config) -> Result<(), CommE> {
         config.validate().map_err(|_| Error::InvalidConfig)?;
+
+        self.apply_timing_config(&config)?;
+
         self.config = config;
         Ok(())
     }
@@ -374,8 +379,32 @@ where
 
     #[allow(dead_code)]
     fn apply_timing_config(&mut self, config: &Config) -> Result<(), CommE> {
-        let _ = config;
-        Err(Error::NotReady)
+        let current = self
+            .interface
+            .read_register(REG_TIMING)
+            .map_err(Error::from)?;
+
+        let mut timing = Timing::from(current);
+        timing.set_odr(config.odr);
+
+        let wakeup = config.wakeup_rate.unwrap_or(WakeUpRate::Ms52);
+        timing.set_wake_up_rate(wakeup);
+
+        let ext_clk = config.ext_clk.unwrap_or(ExtClk::Disabled);
+        timing.set_ext_clk(ext_clk);
+
+        let ext_sync = config.ext_sync.unwrap_or(ExtSync::Disabled);
+        timing.set_ext_sync(ext_sync);
+
+        let updated = u8::from(timing);
+        if updated != current {
+            self
+                .interface
+                .write_register(REG_TIMING, updated)
+                .map_err(Error::from)?;
+        }
+
+        Ok(())
     }
 
     #[allow(dead_code)]

@@ -182,6 +182,7 @@ where
 
         self.apply_timing_config(&config)?;
         self.apply_measurement_config(&config)?;
+        self.apply_power_control_config(&config)?;
 
         self.config = config;
         Ok(())
@@ -389,14 +390,16 @@ where
         &mut self,
         threshold: InstantOnThreshold,
     ) -> Result<(), CommE> {
-        let _ = threshold;
-        Err(Error::NotReady)
+        self.update_power_control(|power| power.set_instant_on_threshold(threshold))?;
+        self.config.instant_on_threshold = Some(threshold);
+        Ok(())
     }
 
     /// Configures the filter settle timing.
     pub fn set_filter_settle(&mut self, settle: SettleFilter) -> Result<(), CommE> {
-        let _ = settle;
-        Err(Error::NotReady)
+        self.update_power_control(|power| power.set_filter_settle(settle))?;
+        self.config.filter_settle = settle;
+        Ok(())
     }
 
     #[inline]
@@ -509,8 +512,35 @@ where
 
     #[allow(dead_code)]
     fn apply_power_control_config(&mut self, config: &Config) -> Result<(), CommE> {
-        let _ = config;
-        Err(Error::NotReady)
+        self.update_power_control(|power| {
+            if let Some(threshold) = config.instant_on_threshold {
+                power.set_instant_on_threshold(threshold);
+            }
+            power.set_filter_settle(config.filter_settle);
+        })
+    }
+
+    fn update_power_control<F>(&mut self, mut mutate: F) -> Result<(), CommE>
+    where
+        F: FnMut(&mut PowerControl),
+    {
+        let current = self
+            .interface
+            .read_register(REG_POWER_CTL)
+            .map_err(Error::from)?;
+
+        let mut power = PowerControl::from(current);
+        mutate(&mut power);
+
+        let updated = u8::from(power);
+        if updated != current {
+            self
+                .interface
+                .write_register(REG_POWER_CTL, updated)
+                .map_err(Error::from)?;
+        }
+
+        Ok(())
     }
 
     #[allow(dead_code)]

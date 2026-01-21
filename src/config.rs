@@ -1,6 +1,14 @@
 //! Configuration primitives for the ADXL372 driver.
 
-use crate::params::{Bandwidth, ExtClk, ExtSync, OutputDataRate, WakeUpRate};
+use crate::params::{
+    Bandwidth,
+    ExtClk,
+    ExtSync,
+    InstantOnThreshold,
+    OutputDataRate,
+    SettleFilter,
+    WakeUpRate,
+};
 
 /// User-facing configuration for the ADXL372 sensor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -15,6 +23,10 @@ pub struct Config {
     pub ext_clk: Option<ExtClk>,
     /// External sync/trigger enable.
     pub ext_sync: Option<ExtSync>,
+    /// Instant-on threshold selection.
+    pub instant_on_threshold: Option<InstantOnThreshold>,
+    /// Filter settle timing selection.
+    pub filter_settle: SettleFilter,
 }
 
 impl Config {
@@ -77,6 +89,18 @@ impl ConfigBuilder {
         self
     }
 
+    /// Sets the instant-on threshold selection.
+    pub fn instant_on_threshold(mut self, threshold: InstantOnThreshold) -> Self {
+        self.config.instant_on_threshold = Some(threshold);
+        self
+    }
+
+    /// Sets the filter settle timing selection.
+    pub fn filter_settle(mut self, settle: SettleFilter) -> Self {
+        self.config.filter_settle = settle;
+        self
+    }
+
     /// Finalizes the builder and returns the [`Config`].
     pub fn build(self) -> Config {
         self.config
@@ -91,6 +115,8 @@ impl Default for Config {
             wakeup_rate: None,
             ext_clk: None,
             ext_sync: None,
+            instant_on_threshold: None,
+            filter_settle: SettleFilter::Ms16,
         }
     }
 }

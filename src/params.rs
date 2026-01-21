@@ -172,6 +172,28 @@ pub enum ExtSync {
     Enabled = 1,
 }
 
+/// User overrange disable flag (`MEASURE.USER_OR_DISABLE`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Specifier)]
+#[repr(u8)]
+#[bits = 1]
+pub enum UserOrDisable {
+    /// Overrange detection is enabled (bit cleared, default).
+    Enabled = 0,
+    /// Overrange detection is disabled (bit set).
+    Disabled = 1,
+}
+
+/// Autosleep control bit (`MEASURE.AUTOSLEEP`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Specifier)]
+#[repr(u8)]
+#[bits = 1]
+pub enum AutoSleep {
+    /// Autosleep disabled.
+    Disabled = 0,
+    /// Autosleep enabled.
+    Enabled = 1,
+}
+
 /// Low-noise modes encoded in `MEASURE.LOW_NOISE`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Specifier)]
 #[repr(u8)]

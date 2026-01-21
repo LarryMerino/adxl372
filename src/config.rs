@@ -1,12 +1,16 @@
 //! Configuration primitives for the ADXL372 driver.
 
 use crate::params::{
+    AutoSleep,
     Bandwidth,
     ExtClk,
     ExtSync,
     InstantOnThreshold,
+    LinkLoopMode,
+    LowNoise,
     OutputDataRate,
     SettleFilter,
+    UserOrDisable,
     WakeUpRate,
 };
 
@@ -21,6 +25,14 @@ pub struct Config {
     pub ext_clk: ExtClk,
     /// External sync/trigger enable.
     pub ext_sync: ExtSync,
+    /// User overrange disable behavior.
+    pub user_or_disable: UserOrDisable,
+    /// Autosleep operating mode.
+    pub autosleep: AutoSleep,
+    /// Activity/inactivity interaction mode.
+    pub linkloop: LinkLoopMode,
+    /// Noise performance mode.
+    pub low_noise: LowNoise,
     /// Analog bandwidth selection.
     pub bandwidth: Bandwidth,
     /// Instant-on threshold selection.
@@ -89,6 +101,12 @@ impl ConfigBuilder {
         self
     }
 
+    /// Configures autosleep behaviour.
+    pub fn autosleep(mut self, autosleep: AutoSleep) -> Self {
+        self.config.autosleep = autosleep;
+        self
+    }
+
     /// Sets the instant-on threshold selection.
     pub fn instant_on_threshold(mut self, threshold: InstantOnThreshold) -> Self {
         self.config.instant_on_threshold = Some(threshold);
@@ -101,6 +119,24 @@ impl ConfigBuilder {
         self
     }
 
+    /// Sets the user overrange disable behavior.
+    pub fn user_or_disable(mut self, setting: UserOrDisable) -> Self {
+        self.config.user_or_disable = setting;
+        self
+    }
+
+    /// Sets the link/loop activity processing mode.
+    pub fn linkloop(mut self, mode: LinkLoopMode) -> Self {
+        self.config.linkloop = mode;
+        self
+    }
+
+    /// Sets the desired noise performance mode.
+    pub fn low_noise(mut self, mode: LowNoise) -> Self {
+        self.config.low_noise = mode;
+        self
+    }
+
     /// Finalizes the builder and returns the [`Config`].
     pub fn build(self) -> Config {
         self.config
@@ -110,11 +146,15 @@ impl ConfigBuilder {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            odr: OutputDataRate::Od6400Hz,
+            odr: OutputDataRate::Od400Hz,
             wakeup_rate: WakeUpRate::Ms52,
             ext_clk: ExtClk::Disabled,
             ext_sync: ExtSync::Disabled,
-            bandwidth: Bandwidth::Bw1600Hz,
+            user_or_disable: UserOrDisable::Enabled,
+            autosleep: AutoSleep::Disabled,
+            linkloop: LinkLoopMode::Default,
+            low_noise: LowNoise::Normal,
+            bandwidth: Bandwidth::Bw200Hz,
             instant_on_threshold: None,
             filter_settle: SettleFilter::Ms16,
         }

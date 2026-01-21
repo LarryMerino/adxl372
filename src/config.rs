@@ -15,14 +15,14 @@ use crate::params::{
 pub struct Config {
     /// Output data rate selection.
     pub odr: OutputDataRate,
+    /// Wake-up timer period used when autosleep/link-loop is enabled.
+    pub wakeup_rate: WakeUpRate,
+    /// External reference clock enable.
+    pub ext_clk: ExtClk,
+    /// External sync/trigger enable.
+    pub ext_sync: ExtSync,
     /// Analog bandwidth selection.
     pub bandwidth: Bandwidth,
-    /// Wake-up timer period used when autosleep/link-loop is enabled.
-    pub wakeup_rate: Option<WakeUpRate>,
-    /// External reference clock enable.
-    pub ext_clk: Option<ExtClk>,
-    /// External sync/trigger enable.
-    pub ext_sync: Option<ExtSync>,
     /// Instant-on threshold selection.
     pub instant_on_threshold: Option<InstantOnThreshold>,
     /// Filter settle timing selection.
@@ -73,19 +73,19 @@ impl ConfigBuilder {
 
     /// Sets the wake-up timer period.
     pub fn wakeup_rate(mut self, wakeup_rate: WakeUpRate) -> Self {
-        self.config.wakeup_rate = Some(wakeup_rate);
+        self.config.wakeup_rate = wakeup_rate;
         self
     }
 
     /// Enables the external clock selection.
     pub fn ext_clk(mut self, ext_clk: ExtClk) -> Self {
-        self.config.ext_clk = Some(ext_clk);
+        self.config.ext_clk = ext_clk;
         self
     }
 
     /// Enables the external sync selection.
     pub fn ext_sync(mut self, ext_sync: ExtSync) -> Self {
-        self.config.ext_sync = Some(ext_sync);
+        self.config.ext_sync = ext_sync;
         self
     }
 
@@ -111,10 +111,10 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             odr: OutputDataRate::Od6400Hz,
+            wakeup_rate: WakeUpRate::Ms52,
+            ext_clk: ExtClk::Disabled,
+            ext_sync: ExtSync::Disabled,
             bandwidth: Bandwidth::Bw1600Hz,
-            wakeup_rate: None,
-            ext_clk: None,
-            ext_sync: None,
             instant_on_threshold: None,
             filter_settle: SettleFilter::Ms16,
         }

@@ -296,25 +296,17 @@ where
 
         if let Some(rate) = wakeup_rate {
             timing.set_wake_up_rate(rate);
-            self.config.wakeup_rate = Some(rate);
+            self.config.wakeup_rate = rate;
         }
 
         if let Some(clk) = ext_clk {
             timing.set_ext_clk(clk);
-            self.config.ext_clk = if clk == ExtClk::Disabled {
-                None
-            } else {
-                Some(clk)
-            };
+            self.config.ext_clk = clk;
         }
 
         if let Some(sync) = ext_sync {
             timing.set_ext_sync(sync);
-            self.config.ext_sync = if sync == ExtSync::Disabled {
-                None
-            } else {
-                Some(sync)
-            };
+            self.config.ext_sync = sync;
         }
 
         let updated = u8::from(timing);
@@ -461,32 +453,12 @@ where
 
     #[allow(dead_code)]
     fn apply_timing_config(&mut self, config: &Config) -> Result<(), CommE> {
-        let current = self
-            .interface
-            .read_register(REG_TIMING)
-            .map_err(Error::from)?;
-
-        let mut timing = Timing::from(current);
-        timing.set_odr(config.odr);
-
-        let wakeup = config.wakeup_rate.unwrap_or(WakeUpRate::Ms52);
-        timing.set_wake_up_rate(wakeup);
-
-        let ext_clk = config.ext_clk.unwrap_or(ExtClk::Disabled);
-        timing.set_ext_clk(ext_clk);
-
-        let ext_sync = config.ext_sync.unwrap_or(ExtSync::Disabled);
-        timing.set_ext_sync(ext_sync);
-
-        let updated = u8::from(timing);
-        if updated != current {
-            self
-                .interface
-                .write_register(REG_TIMING, updated)
-                .map_err(Error::from)?;
-        }
-
-        Ok(())
+        self.configure_timing(
+            Some(config.odr),
+            Some(config.wakeup_rate),
+            Some(config.ext_clk),
+            Some(config.ext_sync),
+        )
     }
 
     #[allow(dead_code)]

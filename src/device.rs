@@ -116,6 +116,9 @@ impl defmt::Format for StatusSnapshot {
 }
 
 impl<IFACE> Adxl372<IFACE> {
+    // ==================================================================
+    // == Driver Construction & Ownership ===============================
+    // ==================================================================
     /// Creates a new driver instance from the provided bus interface.
     pub fn new(interface: IFACE, config: Config) -> Self {
         Self { interface, config }
@@ -136,6 +139,9 @@ impl<SPI> Adxl372<SpiInterface<SPI>>
 where
     SPI: SpiDevice,
 {
+    // ==================================================================
+    // == SPI Convenience Constructors ==================================
+    // ==================================================================
     /// Convenience constructor for SPI transports.
     pub fn new_spi(spi: SPI, config: Config) -> Self {
         Self::new(SpiInterface::new(spi), config)
@@ -152,6 +158,9 @@ impl<IFACE, CommE> Adxl372<IFACE>
 where
     IFACE: Adxl372Interface<Error = CommE>,
 {
+    // ==================================================================
+    // == Initialization & Global Configuration ==========================
+    // ==================================================================
     /// Initializes the sensor using the current configuration.
     ///
     /// Enforces the datasheet power-up-to-standby delay before issuing any commands so callers
@@ -162,7 +171,7 @@ where
         delay.delay_ms(POWER_UP_TO_STANDBY_DELAY_MS);
         self.set_power_mode(PowerMode::Standby, delay)?;
         self.reset()?;
-        
+
         Ok(())
     }
 
@@ -206,6 +215,9 @@ where
             .map_err(Error::from)
     }
 
+    // ==================================================================
+    // == Identification & Status =======================================
+    // ==================================================================
     /// Reads the identification registers and returns raw bytes.
     pub fn device_id(&mut self) -> Result<[u8; 4], CommE> {
         Err(Error::NotReady)
@@ -248,6 +260,9 @@ where
         Err(Error::NotReady)
     }
 
+    // ==================================================================
+    // == Power & Measurement Configuration =============================
+    // ==================================================================
     /// Places the sensor in the requested power mode.
     pub fn set_power_mode(&mut self, mode: PowerMode, delay: &mut impl DelayNs) -> Result<(), CommE> {
         let current = self
@@ -394,6 +409,9 @@ where
         Ok(())
     }
 
+    // ==================================================================
+    // == Data Acquisition & FIFO =======================================
+    // ==================================================================
     #[inline]
     fn unpack_axis(msb: u8, lsb: u8) -> i16 {
         // Sensor outputs 12-bit left-justified two's complement data.
@@ -442,14 +460,17 @@ where
         Err(Error::NotReady)
     }
 
+    // ==================================================================
+    // == Self-Test ======================================================
+    // ==================================================================
     /// Executes the datasheet self-test routine.
     pub fn run_self_test(&mut self) -> Result<SelfTestReport, CommE> {
         run_self_test(self)
     }
 
-    // ---------------------------------------------------------------------
-    // Configuration helper stubs – to be implemented alongside register logic
-    // ---------------------------------------------------------------------
+    // ==================================================================
+    // == Internal Configuration Helpers =================================
+    // ==================================================================
 
     #[allow(dead_code)]
     fn apply_timing_config(&mut self, config: &Config) -> Result<(), CommE> {

@@ -291,48 +291,23 @@ where
         ext_clk: Option<ExtClk>,
         ext_sync: Option<ExtSync>,
     ) -> Result<(), CommE> {
-        if let Some(new_odr) = odr {
-            if self.config.bandwidth.max_hz() * 2 > new_odr.hz() {
-                return Err(Error::InvalidConfig);
+        self.update_timing_config(self.config.bandwidth, |timing| {
+            if let Some(new_odr) = odr {
+                timing.set_odr(new_odr);
             }
-        }
 
-        let current = self
-            .interface
-            .read_register(REG_TIMING)
-            .map_err(Error::from)?;
+            if let Some(rate) = wakeup_rate {
+                timing.set_wake_up_rate(rate);
+            }
 
-        let mut timing = Timing::from(current);
+            if let Some(clk) = ext_clk {
+                timing.set_ext_clk(clk);
+            }
 
-        if let Some(new_odr) = odr {
-            timing.set_odr(new_odr);
-            self.config.odr = new_odr;
-        }
-
-        if let Some(rate) = wakeup_rate {
-            timing.set_wake_up_rate(rate);
-            self.config.wakeup_rate = rate;
-        }
-
-        if let Some(clk) = ext_clk {
-            timing.set_ext_clk(clk);
-            self.config.ext_clk = clk;
-        }
-
-        if let Some(sync) = ext_sync {
-            timing.set_ext_sync(sync);
-            self.config.ext_sync = sync;
-        }
-
-        let updated = u8::from(timing);
-        if updated != current {
-            self
-                .interface
-                .write_register(REG_TIMING, updated)
-                .map_err(Error::from)?;
-        }
-
-        Ok(())
+            if let Some(sync) = ext_sync {
+                timing.set_ext_sync(sync);
+            }
+        })
     }
 
     /// Updates FIFO format, mode, or watermark.
@@ -474,12 +449,45 @@ where
 
     #[allow(dead_code)]
     fn apply_timing_config(&mut self, config: &Config) -> Result<(), CommE> {
-        self.configure_timing(
-            Some(config.odr),
-            Some(config.wakeup_rate),
-            Some(config.ext_clk),
-            Some(config.ext_sync),
-        )
+        self.update_timing_config(config.bandwidth, |timing| {
+            timing.set_odr(config.odr);
+            timing.set_wake_up_rate(config.wakeup_rate);
+            timing.set_ext_clk(config.ext_clk);
+            timing.set_ext_sync(config.ext_sync);
+        })
+    }
+
+    fn update_timing_config<F>(&mut self, bandwidth: Bandwidth, mut mutate: F) -> Result<(), CommE>
+    where
+        F: FnMut(&mut Timing),
+    {
+        let current = self
+            .interface
+            .read_register(REG_TIMING)
+            .map_err(Error::from)?;
+
+        let mut timing = Timing::from(current);
+        mutate(&mut timing);
+
+        let new_odr = timing.odr();
+        if bandwidth.max_hz() * 2 > new_odr.hz() {
+            return Err(Error::InvalidConfig);
+        }
+
+        let updated = u8::from(timing);
+        if updated != current {
+            self
+                .interface
+                .write_register(REG_TIMING, updated)
+                .map_err(Error::from)?;
+        }
+
+        self.config.odr = new_odr;
+        self.config.wakeup_rate = timing.wake_up_rate();
+        self.config.ext_clk = timing.ext_clk();
+        self.config.ext_sync = timing.ext_sync();
+
+        Ok(())
     }
 
     #[allow(dead_code)]

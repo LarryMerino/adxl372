@@ -6,6 +6,7 @@ use crate::fifo::{FifoSettings, Sample};
 use crate::interface::spi::SpiInterface;
 use crate::interface::Adxl372Interface;
 use crate::params::{
+    AutoSleep,
     Bandwidth,
     ExtClk,
     ExtSync,
@@ -17,6 +18,7 @@ use crate::params::{
     OutputDataRate,
     PowerMode,
     SettleFilter,
+    UserOrDisable,
     WakeUpRate,
 };
 use crate::registers::{
@@ -309,7 +311,39 @@ where
             }
         })
     }
+    
+    /// Adjusts measurement bandwidth, noise, autosleep, and link/loop settings.
+    pub fn configure_measurement(
+        &mut self,
+        user_or_disable: Option<UserOrDisable>,
+        autosleep: Option<AutoSleep>,
+        linkloop: Option<LinkLoopMode>,
+        low_noise: Option<LowNoise>,
+        bandwidth: Option<Bandwidth>,
+    ) -> Result<(), CommE> {
+        self.update_measure_config(|measure| {
+            if let Some(mode) = linkloop {
+                measure.set_link_loop_mode(mode);
+            }
 
+            if let Some(noise) = low_noise {
+                measure.set_low_noise(noise);
+            }
+
+            if let Some(bw) = bandwidth {
+                measure.set_bandwidth(bw);
+            }
+
+            if let Some(setting) = user_or_disable {
+                measure.set_user_or_disable(matches!(setting, UserOrDisable::Disabled));
+            }
+
+            if let Some(sleep) = autosleep {
+                measure.set_autosleep(matches!(sleep, AutoSleep::Enabled));
+            }
+        })
+    }
+    
     /// Updates FIFO format, mode, or watermark.
     pub fn configure_fifo(
         &mut self,
@@ -323,49 +357,6 @@ where
         Err(Error::NotReady)
     }
 
-    /// Adjusts measurement bandwidth, noise, and link/loop settings.
-    pub fn configure_measurement(
-        &mut self,
-        linkloop: Option<LinkLoopMode>,
-        low_noise: Option<LowNoise>,
-        bandwidth: Option<Bandwidth>,
-    ) -> Result<(), CommE> {
-        if let Some(bw) = bandwidth {
-            if bw.max_hz() * 2 > self.config.odr.hz() {
-                return Err(Error::InvalidConfig);
-            }
-        }
-
-        let current = self
-            .interface
-            .read_register(REG_MEASURE)
-            .map_err(Error::from)?;
-
-        let mut measure = Measure::from(current);
-
-        if let Some(mode) = linkloop {
-            measure.set_link_loop_mode(mode);
-        }
-
-        if let Some(noise) = low_noise {
-            measure.set_low_noise(noise);
-        }
-
-        if let Some(bw) = bandwidth {
-            measure.set_bandwidth(bw);
-            self.config.bandwidth = bw;
-        }
-
-        let updated = u8::from(measure);
-        if updated != current {
-            self
-                .interface
-                .write_register(REG_MEASURE, updated)
-                .map_err(Error::from)?;
-        }
-
-        Ok(())
-    }
 
     /// Sets the instant-on threshold selection.
     pub fn set_instant_on_threshold(
@@ -489,16 +480,34 @@ where
 
         Ok(())
     }
-
+    
     #[allow(dead_code)]
     fn apply_measurement_config(&mut self, config: &Config) -> Result<(), CommE> {
+        self.update_measure_config(|measure| {
+            measure.set_bandwidth(config.bandwidth);
+            measure.set_low_noise(config.low_noise);
+            measure.set_link_loop_mode(config.linkloop);
+            measure.set_autosleep(matches!(config.autosleep, AutoSleep::Enabled));
+            measure.set_user_or_disable(matches!(config.user_or_disable, UserOrDisable::Disabled));
+        })
+    }
+
+    fn update_measure_config<F>(&mut self, mut mutate: F) -> Result<(), CommE>
+    where
+        F: FnMut(&mut Measure),
+    {
         let current = self
             .interface
             .read_register(REG_MEASURE)
             .map_err(Error::from)?;
 
         let mut measure = Measure::from(current);
-        measure.set_bandwidth(config.bandwidth);
+        mutate(&mut measure);
+
+        let new_bandwidth = measure.bandwidth();
+        if new_bandwidth.max_hz() * 2 > self.config.odr.hz() {
+            return Err(Error::InvalidConfig);
+        }
 
         let updated = u8::from(measure);
         if updated != current {
@@ -507,6 +516,20 @@ where
                 .write_register(REG_MEASURE, updated)
                 .map_err(Error::from)?;
         }
+
+        self.config.bandwidth = new_bandwidth;
+        self.config.low_noise = measure.low_noise();
+        self.config.linkloop = measure.link_loop_mode();
+        self.config.autosleep = if measure.autosleep() {
+            AutoSleep::Enabled
+        } else {
+            AutoSleep::Disabled
+        };
+        self.config.user_or_disable = if measure.user_or_disable() {
+            UserOrDisable::Disabled
+        } else {
+            UserOrDisable::Enabled
+        };
 
         Ok(())
     }

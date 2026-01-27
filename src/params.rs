@@ -62,6 +62,17 @@ impl Bandwidth {
     }
 }
 
+/// Low-pass filter disable bit (`FILTER_CTL.LPF_DISABLE`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Specifier)]
+#[repr(u8)]
+#[bits = 1]
+pub enum LpfDisable {
+    /// Low-pass filter enabled (default signal path).
+    Enabled = 0,
+    /// Low-pass filter disabled.
+    Disabled = 1,
+}
+
 /// FIFO packing formats encoded in `FIFO_CTL.FIFO_FORMAT`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Specifier)]
 #[repr(u8)]
@@ -169,6 +180,17 @@ pub enum ExtSync {
     /// External sync disabled.
     Disabled = 0,
     /// External sync enabled.
+    Enabled = 1,
+}
+
+/// I2C high-speed mode enable bit (`TIMING.I2C_HSM_EN`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Specifier)]
+#[repr(u8)]
+#[bits = 1]
+pub enum I2cHsmEn {
+    /// High-speed mode disabled (standard I2C timing).
+    Disabled = 0,
+    /// High-speed mode enabled (up to 3.4 MHz).
     Enabled = 1,
 }
 
@@ -311,4 +333,15 @@ impl HighPassCorner {
     pub const fn is_activity_lp_compatible(self, odr: OutputDataRate) -> bool {
         self.hz(odr) <= 10.0
     }
+}
+
+/// High-pass filter disable bit (`FILTER_CTL.HPF_DISABLE`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Specifier)]
+#[repr(u8)]
+#[bits = 1]
+pub enum HpfDisable {
+    /// High-pass filter enabled.
+    Enabled = 0,
+    /// High-pass filter disabled (dc coupling).
+    Disabled = 1,
 }

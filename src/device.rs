@@ -174,7 +174,7 @@ where
         self.config.validate().map_err(|_| Error::InvalidConfig)?;
 
         delay.delay_ms(POWER_UP_TO_STANDBY_DELAY_MS);
-        self.set_power_mode(PowerMode::Standby, delay)?;
+        self.update_power_control(|power| power.set_mode(PowerMode::Standby))?;
         self.reset()?;
 
         Ok(())
@@ -268,27 +268,6 @@ where
     // ==================================================================
     // == Power & Measurement Configuration =============================
     // ==================================================================
-    /// Places the sensor in the requested power mode.
-    pub fn set_power_mode(&mut self, mode: PowerMode, delay: &mut impl DelayNs) -> Result<(), CommE> {
-        let current = self
-            .interface
-            .read_register(REG_POWER_CTL)
-            .map_err(Error::from)?;
-
-        let updated = PowerControl::from(current).with_mode(mode);
-        let encoded = u8::from(updated);
-
-        if encoded != current {
-            self
-                .interface
-                .write_register(REG_POWER_CTL, encoded)
-                .map_err(Error::from)?;
-        }
-
-        self.config.power_mode = mode;
-        Ok(())
-    }
-
     /// Updates timing-related register fields.
     pub fn configure_timing(
         &mut self,

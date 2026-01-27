@@ -293,7 +293,7 @@ where
         ext_clk: Option<ExtClk>,
         ext_sync: Option<ExtSync>,
     ) -> Result<(), CommE> {
-        self.update_timing_config(self.config.bandwidth, |timing| {
+        self.update_timing_config(|timing| {
             if let Some(new_odr) = odr {
                 timing.set_odr(new_odr);
             }
@@ -440,7 +440,7 @@ where
 
     #[allow(dead_code)]
     fn apply_timing_config(&mut self, config: &Config) -> Result<(), CommE> {
-        self.update_timing_config(config.bandwidth, |timing| {
+        self.update_timing_config(|timing| {
             timing.set_odr(config.odr);
             timing.set_wake_up_rate(config.wakeup_rate);
             timing.set_ext_clk(config.ext_clk);
@@ -448,7 +448,7 @@ where
         })
     }
 
-    fn update_timing_config<F>(&mut self, bandwidth: Bandwidth, mut mutate: F) -> Result<(), CommE>
+    fn update_timing_config<F>(&mut self, mut mutate: F) -> Result<(), CommE>
     where
         F: FnMut(&mut Timing),
     {
@@ -461,7 +461,7 @@ where
         mutate(&mut timing);
 
         let new_odr = timing.odr();
-        if bandwidth.max_hz() * 2 > new_odr.hz() {
+        if self.config.bandwidth.max_hz() * 2 > new_odr.hz() {
             return Err(Error::InvalidConfig);
         }
 

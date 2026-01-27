@@ -266,7 +266,7 @@ where
     }
 
     // ==================================================================
-    // == Power & Measurement Configuration =============================
+    // == Timing, Measurement & Power Configuration =====================
     // ==================================================================
     /// Updates timing-related register fields.
     pub fn configure_timing(
@@ -360,20 +360,6 @@ where
         Ok(())
     }
     
-    /// Updates FIFO format, mode, or watermark.
-    pub fn configure_fifo(
-        &mut self,
-        format: Option<FifoFormat>,
-        mode: Option<FifoMode>,
-        watermark: Option<u16>,
-    ) -> Result<(), CommE> {
-        let _ = format;
-        let _ = mode;
-        let _ = watermark;
-        Err(Error::NotReady)
-    }
-
-
     /// Sets the instant-on threshold selection.
     pub fn set_instant_on_threshold(
         &mut self,
@@ -390,7 +376,7 @@ where
     }
 
     // ==================================================================
-    // == Data Acquisition & FIFO =======================================
+    // == Data Acquisition ==============================================
     // ==================================================================
     #[inline]
     fn unpack_axis(msb: u8, lsb: u8) -> i16 {
@@ -415,6 +401,22 @@ where
 
     /// Returns acceleration scaled in milli-g.
     pub fn read_xyz_mg(&mut self) -> Result<[i32; 3], CommE> {
+        Err(Error::NotReady)
+    }
+
+    // ==================================================================
+    // == FIFO Configuration & Streaming ================================
+    // ==================================================================
+    /// Updates FIFO format, mode, or watermark.
+    pub fn configure_fifo(
+        &mut self,
+        format: Option<FifoFormat>,
+        mode: Option<FifoMode>,
+        watermark: Option<u16>,
+    ) -> Result<(), CommE> {
+        let _ = format;
+        let _ = mode;
+        let _ = watermark;
         Err(Error::NotReady)
     }
 

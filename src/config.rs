@@ -42,7 +42,7 @@ pub struct Config {
     /// I2C high-speed enable selection.
     pub i2c_hsm_en: I2cHsmEn,
     /// Instant-on threshold selection.
-    pub instant_on_threshold: Option<InstantOnThreshold>,
+    pub instant_on_threshold: InstantOnThreshold,
     /// Filter settle timing selection.
     pub filter_settle: SettleFilter,
     /// Low-pass filter disable selection.
@@ -121,7 +121,7 @@ impl ConfigBuilder {
 
     /// Sets the instant-on threshold selection.
     pub fn instant_on_threshold(mut self, threshold: InstantOnThreshold) -> Self {
-        self.config.instant_on_threshold = Some(threshold);
+        self.config.instant_on_threshold = threshold;
         self
     }
 
@@ -192,7 +192,7 @@ impl Default for Config {
             low_noise: LowNoise::Normal,
             bandwidth: Bandwidth::Bw200Hz,
             i2c_hsm_en: I2cHsmEn::Disabled,
-            instant_on_threshold: None,
+            instant_on_threshold: InstantOnThreshold::Low,
             filter_settle: SettleFilter::Ms16,
             lpf_disable: LpfDisable::Enabled,
             hpf_disable: HpfDisable::Enabled,

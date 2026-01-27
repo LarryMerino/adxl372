@@ -12,9 +12,12 @@ use crate::params::{
     ExtSync,
     FifoFormat,
     FifoMode,
+    HpfDisable,
     InstantOnThreshold,
+    I2cHsmEn,
     LinkLoopMode,
     LowNoise,
+    LpfDisable,
     OutputDataRate,
     PowerMode,
     SettleFilter,
@@ -282,6 +285,7 @@ where
                 .map_err(Error::from)?;
         }
 
+        self.config.power_mode = mode;
         Ok(())
     }
 
@@ -537,10 +541,14 @@ where
     #[allow(dead_code)]
     fn apply_power_control_config(&mut self, config: &Config) -> Result<(), CommE> {
         self.update_power_control(|power| {
+            power.set_mode(config.power_mode);
+            power.set_hpf_disable(matches!(config.hpf_disable, HpfDisable::Disabled));
+            power.set_lpf_disable(matches!(config.lpf_disable, LpfDisable::Disabled));
             if let Some(threshold) = config.instant_on_threshold {
                 power.set_instant_on_threshold(threshold);
             }
             power.set_filter_settle(config.filter_settle);
+            power.set_i2c_high_speed_enable(matches!(config.i2c_hsm_en, I2cHsmEn::Enabled));
         })
     }
 

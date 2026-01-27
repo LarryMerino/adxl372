@@ -5,10 +5,14 @@ use crate::params::{
     Bandwidth,
     ExtClk,
     ExtSync,
+    HpfDisable,
     InstantOnThreshold,
+    I2cHsmEn,
     LinkLoopMode,
     LowNoise,
+    LpfDisable,
     OutputDataRate,
+    PowerMode,
     SettleFilter,
     UserOrDisable,
     WakeUpRate,
@@ -35,10 +39,18 @@ pub struct Config {
     pub low_noise: LowNoise,
     /// Analog bandwidth selection.
     pub bandwidth: Bandwidth,
+    /// I2C high-speed enable selection.
+    pub i2c_hsm_en: I2cHsmEn,
     /// Instant-on threshold selection.
     pub instant_on_threshold: Option<InstantOnThreshold>,
     /// Filter settle timing selection.
     pub filter_settle: SettleFilter,
+    /// Low-pass filter disable selection.
+    pub lpf_disable: LpfDisable,
+    /// High-pass filter disable selection.
+    pub hpf_disable: HpfDisable,
+    /// Operating power mode selection.
+    pub power_mode: PowerMode,
 }
 
 impl Config {
@@ -119,6 +131,24 @@ impl ConfigBuilder {
         self
     }
 
+    /// Configures the low-pass filter disable bit.
+    pub fn lpf_disable(mut self, setting: LpfDisable) -> Self {
+        self.config.lpf_disable = setting;
+        self
+    }
+
+    /// Configures the high-pass filter disable bit.
+    pub fn hpf_disable(mut self, setting: HpfDisable) -> Self {
+        self.config.hpf_disable = setting;
+        self
+    }
+
+    /// Enables or disables I2C high-speed mode.
+    pub fn i2c_hsm_en(mut self, setting: I2cHsmEn) -> Self {
+        self.config.i2c_hsm_en = setting;
+        self
+    }
+
     /// Sets the user overrange disable behavior.
     pub fn user_or_disable(mut self, setting: UserOrDisable) -> Self {
         self.config.user_or_disable = setting;
@@ -134,6 +164,12 @@ impl ConfigBuilder {
     /// Sets the desired noise performance mode.
     pub fn low_noise(mut self, mode: LowNoise) -> Self {
         self.config.low_noise = mode;
+        self
+    }
+
+    /// Sets the desired operating power mode.
+    pub fn power_mode(mut self, mode: PowerMode) -> Self {
+        self.config.power_mode = mode;
         self
     }
 
@@ -155,8 +191,12 @@ impl Default for Config {
             linkloop: LinkLoopMode::Default,
             low_noise: LowNoise::Normal,
             bandwidth: Bandwidth::Bw200Hz,
+            i2c_hsm_en: I2cHsmEn::Disabled,
             instant_on_threshold: None,
             filter_settle: SettleFilter::Ms16,
+            lpf_disable: LpfDisable::Enabled,
+            hpf_disable: HpfDisable::Enabled,
+            power_mode: PowerMode::Standby,
         }
     }
 }

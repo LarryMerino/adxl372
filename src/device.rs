@@ -347,6 +347,39 @@ where
             }
         })
     }
+
+    /// Updates `POWER_CTL` fields that do not require additional sequencing.
+    pub fn configure_power_ctl(
+        &mut self,
+        hpf_disable: Option<HpfDisable>,
+        lpf_disable: Option<LpfDisable>,
+        instant_on_threshold: Option<InstantOnThreshold>,
+        filter_settle: Option<SettleFilter>,
+        i2c_hsm_en: Option<I2cHsmEn>,
+    ) -> Result<(), CommE> {
+        self.update_power_control(|power| {
+            if let Some(setting) = hpf_disable {
+                power.set_hpf_disable(matches!(setting, HpfDisable::Disabled));
+            }
+
+            if let Some(setting) = lpf_disable {
+                power.set_lpf_disable(matches!(setting, LpfDisable::Disabled));
+            }
+
+            if let Some(threshold) = instant_on_threshold {
+                power.set_instant_on_threshold(threshold);
+            }
+
+            if let Some(settle) = filter_settle {
+                power.set_filter_settle(settle);
+            }
+
+            if let Some(setting) = i2c_hsm_en {
+                power.set_i2c_high_speed_enable(matches!(setting, I2cHsmEn::Enabled));
+            }
+        })?;
+        Ok(())
+    }
     
     /// Updates FIFO format, mode, or watermark.
     pub fn configure_fifo(
@@ -368,14 +401,12 @@ where
         threshold: InstantOnThreshold,
     ) -> Result<(), CommE> {
         self.update_power_control(|power| power.set_instant_on_threshold(threshold))?;
-        self.config.instant_on_threshold = threshold;
         Ok(())
     }
 
     /// Configures the filter settle timing.
     pub fn set_filter_settle(&mut self, settle: SettleFilter) -> Result<(), CommE> {
         self.update_power_control(|power| power.set_filter_settle(settle))?;
-        self.config.filter_settle = settle;
         Ok(())
     }
 
@@ -569,6 +600,25 @@ where
                 .write_register(REG_POWER_CTL, updated)
                 .map_err(Error::from)?;
         }
+
+        self.config.power_mode = power.mode();
+        self.config.hpf_disable = if power.hpf_disable() {
+            HpfDisable::Disabled
+        } else {
+            HpfDisable::Enabled
+        };
+        self.config.lpf_disable = if power.lpf_disable() {
+            LpfDisable::Disabled
+        } else {
+            LpfDisable::Enabled
+        };
+        self.config.filter_settle = power.filter_settle();
+        self.config.instant_on_threshold = power.instant_on_threshold();
+        self.config.i2c_hsm_en = if power.i2c_high_speed_enable() {
+            I2cHsmEn::Enabled
+        } else {
+            I2cHsmEn::Disabled
+        };
 
         Ok(())
     }

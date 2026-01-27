@@ -174,9 +174,9 @@ where
         self.config.validate().map_err(|_| Error::InvalidConfig)?;
 
         delay.delay_ms(POWER_UP_TO_STANDBY_DELAY_MS);
-        self.update_power_control(|power| power.set_mode(PowerMode::Standby))?;
+        self.force_power_mode(PowerMode::Standby)?;
         self.reset()?;
-
+        self.configure(self.config)?;
         Ok(())
     }
 
@@ -560,7 +560,12 @@ where
         })
     }
 
-    fn update_power_control<F>(&mut self, mut mutate: F) -> Result<(), CommE>
+    fn force_power_mode(&mut self, mode: PowerMode) -> Result<(), CommE> {
+        self.mutate_power_control(|power| power.set_mode(mode))?;
+        Ok(())
+    }
+
+    fn mutate_power_control<F>(&mut self, mut mutate: F) -> Result<PowerControl, CommE>
     where
         F: FnMut(&mut PowerControl),
     {
@@ -579,6 +584,15 @@ where
                 .write_register(REG_POWER_CTL, updated)
                 .map_err(Error::from)?;
         }
+
+        Ok(power)
+    }
+
+    fn update_power_control<F>(&mut self, mut mutate: F) -> Result<(), CommE>
+    where
+        F: FnMut(&mut PowerControl),
+    {
+        let power = self.mutate_power_control(|ctrl| mutate(ctrl))?;
 
         self.config.power_mode = power.mode();
         self.config.hpf_disable = if power.hpf_disable() {

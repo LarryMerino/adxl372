@@ -360,21 +360,6 @@ where
         Ok(())
     }
     
-    /// Sets the instant-on threshold selection.
-    pub fn set_instant_on_threshold(
-        &mut self,
-        threshold: InstantOnThreshold,
-    ) -> Result<(), CommE> {
-        self.update_power_control(|power| power.set_instant_on_threshold(threshold))?;
-        Ok(())
-    }
-
-    /// Configures the filter settle timing.
-    pub fn set_filter_settle(&mut self, settle: SettleFilter) -> Result<(), CommE> {
-        self.update_power_control(|power| power.set_filter_settle(settle))?;
-        Ok(())
-    }
-
     // ==================================================================
     // == Data Acquisition ==============================================
     // ==================================================================

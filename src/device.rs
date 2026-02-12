@@ -12,8 +12,8 @@ use crate::params::{
 };
 use crate::registers::{
     EXPECTED_DEVID_AD, EXPECTED_DEVID_MST, EXPECTED_PART_ID, Measure, PowerControl, REG_DEVID_AD,
-    REG_MEASURE, REG_POWER_CTL, REG_RESET, REG_STATUS, REG_TIMING, REG_XDATA_H, RESET_COMMAND,
-    Status, Status2, Timing,
+    REG_MEASURE, REG_POWER_CTL, REG_RESET, REG_STATUS, REG_TIMING, REG_XDATA_H, REG_YDATA_H,
+    REG_ZDATA_H, RESET_COMMAND, Status, Status2, Timing,
 };
 use crate::self_test::{SelfTestReport, run_self_test};
 use embedded_hal::delay::DelayNs;
@@ -349,6 +349,36 @@ where
         let z = Self::unpack_axis(raw[4], raw[5]);
 
         Ok([x, y, z])
+    }
+
+    /// Reads the raw X-axis acceleration sample.
+    pub fn read_x_raw(&mut self) -> Result<i16, CommE> {
+        let mut raw = [0u8; 2];
+        self.interface
+            .read_many(REG_XDATA_H, &mut raw)
+            .map_err(Error::from)?;
+
+        Ok(Self::unpack_axis(raw[0], raw[1]))
+    }
+
+    /// Reads the raw Y-axis acceleration sample.
+    pub fn read_y_raw(&mut self) -> Result<i16, CommE> {
+        let mut raw = [0u8; 2];
+        self.interface
+            .read_many(REG_YDATA_H, &mut raw)
+            .map_err(Error::from)?;
+
+        Ok(Self::unpack_axis(raw[0], raw[1]))
+    }
+
+    /// Reads the raw Z-axis acceleration sample.
+    pub fn read_z_raw(&mut self) -> Result<i16, CommE> {
+        let mut raw = [0u8; 2];
+        self.interface
+            .read_many(REG_ZDATA_H, &mut raw)
+            .map_err(Error::from)?;
+
+        Ok(Self::unpack_axis(raw[0], raw[1]))
     }
 
     /// Returns acceleration scaled in milli-g.

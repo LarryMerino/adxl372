@@ -3,48 +3,21 @@
 use crate::config::Config;
 use crate::error::{Error, Result};
 use crate::fifo::{FifoSettings, Sample};
-use crate::interface::spi::SpiInterface;
 use crate::interface::Adxl372Interface;
+use crate::interface::spi::SpiInterface;
 use crate::params::{
-    AutoSleep,
-    Bandwidth,
-    ExtClk,
-    ExtSync,
-    FifoFormat,
-    FifoMode,
-    HpfDisable,
-    InstantOnThreshold,
-    I2cHsmEn,
-    LinkLoopMode,
-    LowNoise,
-    LpfDisable,
-    OutputDataRate,
-    PowerMode,
-    SettleFilter,
-    UserOrDisable,
-    WakeUpRate,
+    AutoSleep, Bandwidth, ExtClk, ExtSync, FifoFormat, FifoMode, HpfDisable, I2cHsmEn,
+    InstantOnThreshold, LinkLoopMode, LowNoise, LpfDisable, OutputDataRate, PowerMode,
+    SettleFilter, UserOrDisable, WakeUpRate,
 };
 use crate::registers::{
-    Measure,
-    PowerControl,
-    Status,
-    Status2,
-    Timing,
-    EXPECTED_DEVID_AD,
-    EXPECTED_DEVID_MST,
-    EXPECTED_PART_ID,
-    REG_DEVID_AD,
-    REG_MEASURE,
-    REG_POWER_CTL,
-    REG_RESET,
-    REG_STATUS,
-    REG_TIMING,
-    REG_XDATA_H,
-    RESET_COMMAND,
+    EXPECTED_DEVID_AD, EXPECTED_DEVID_MST, EXPECTED_PART_ID, Measure, PowerControl, REG_DEVID_AD,
+    REG_MEASURE, REG_POWER_CTL, REG_RESET, REG_STATUS, REG_TIMING, REG_XDATA_H, RESET_COMMAND,
+    Status, Status2, Timing,
 };
-use crate::self_test::{run_self_test, SelfTestReport};
-use embedded_hal::spi::SpiDevice;
+use crate::self_test::{SelfTestReport, run_self_test};
 use embedded_hal::delay::DelayNs;
+use embedded_hal::spi::SpiDevice;
 
 // ADXL372 datasheet power-up to standby delay (milliseconds).
 const POWER_UP_TO_STANDBY_DELAY_MS: u32 = 5;
@@ -214,8 +187,7 @@ where
 
     /// Issues a soft reset sequence.
     pub fn reset(&mut self) -> Result<(), CommE> {
-        self
-            .interface
+        self.interface
             .write_register(REG_RESET, RESET_COMMAND)
             .map_err(Error::from)
     }
@@ -231,14 +203,11 @@ where
     /// Verifies identification registers against the expected ADXL372 constants.
     pub fn check_ids(&mut self) -> Result<u8, CommE> {
         let mut ids = [0u8; 4];
-        self
-            .interface
+        self.interface
             .read_many(REG_DEVID_AD, &mut ids)
             .map_err(Error::from)?;
 
-        if ids[0] != EXPECTED_DEVID_AD
-            || ids[1] != EXPECTED_DEVID_MST
-            || ids[2] != EXPECTED_PART_ID
+        if ids[0] != EXPECTED_DEVID_AD || ids[1] != EXPECTED_DEVID_MST || ids[2] != EXPECTED_PART_ID
         {
             return Err(Error::DeviceIdMismatch);
         }
@@ -249,8 +218,7 @@ where
     /// Returns a snapshot of the `STATUS` and `STATUS2` registers.
     pub fn read_status(&mut self) -> Result<StatusSnapshot, CommE> {
         let mut raw = [0u8; 2];
-        self
-            .interface
+        self.interface
             .read_many(REG_STATUS, &mut raw)
             .map_err(Error::from)?;
 
@@ -294,7 +262,7 @@ where
             }
         })
     }
-    
+
     /// Adjusts measurement bandwidth, noise, autosleep, and link/loop settings.
     pub fn configure_measurement(
         &mut self,
@@ -359,7 +327,7 @@ where
         })?;
         Ok(())
     }
-    
+
     // ==================================================================
     // == Data Acquisition ==============================================
     // ==================================================================
@@ -372,8 +340,7 @@ where
     /// Reads a raw acceleration triplet.
     pub fn read_xyz_raw(&mut self) -> Result<[i16; 3], CommE> {
         let mut raw = [0u8; RAW_AXIS_BYTES];
-        self
-            .interface
+        self.interface
             .read_many(REG_XDATA_H, &mut raw)
             .map_err(Error::from)?;
 
@@ -430,9 +397,14 @@ where
     // ==================================================================
     // == Self-Test ======================================================
     // ==================================================================
-    /// Executes the datasheet self-test routine.
-    pub fn run_self_test(&mut self) -> Result<SelfTestReport, CommE> {
-        run_self_test(self)
+    /// Executes the ER001 self-test routine using the sensor's default settings.
+    ///
+    /// This call performs a soft reset before collecting samples and issues another reset when
+    /// the routine completes, so always run it *before* invoking [`init`](Self::init) or any
+    /// other configuration helper. After the self-test finishes you must re-apply your desired
+    /// configuration because all registers have been returned to their power-on defaults.
+    pub fn run_self_test(&mut self, delay: &mut impl DelayNs) -> Result<SelfTestReport, CommE> {
+        run_self_test(self, delay)
     }
 
     // ==================================================================
@@ -468,8 +440,7 @@ where
 
         let updated = u8::from(timing);
         if updated != current {
-            self
-                .interface
+            self.interface
                 .write_register(REG_TIMING, updated)
                 .map_err(Error::from)?;
         }
@@ -481,7 +452,7 @@ where
 
         Ok(())
     }
-    
+
     #[allow(dead_code)]
     fn apply_measurement_config(&mut self, config: &Config) -> Result<(), CommE> {
         self.update_measure_config(|measure| {
@@ -512,8 +483,7 @@ where
 
         let updated = u8::from(measure);
         if updated != current {
-            self
-                .interface
+            self.interface
                 .write_register(REG_MEASURE, updated)
                 .map_err(Error::from)?;
         }
@@ -566,8 +536,7 @@ where
 
         let updated = u8::from(power);
         if updated != current {
-            self
-                .interface
+            self.interface
                 .write_register(REG_POWER_CTL, updated)
                 .map_err(Error::from)?;
         }

@@ -86,7 +86,10 @@ mod tests {
 
     impl<'a> MockDevice<'a> {
         fn new(expectations: &'a [TransactionExpectation<'a>]) -> Self {
-            Self { expectations, index: 0 }
+            Self {
+                expectations,
+                index: 0,
+            }
         }
     }
 
@@ -192,9 +195,7 @@ mod tests {
         let mock = MockDevice::new(&expectations);
         let mut interface = SpiInterface::new(mock);
 
-        interface
-            .write_many(0x41, &[0x12, 0x34, 0x56])
-            .unwrap();
+        interface.write_many(0x41, &[0x12, 0x34, 0x56]).unwrap();
     }
 
     /// Confirms read_register is implemented via read_many to avoid duplicated logic.

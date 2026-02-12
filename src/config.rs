@@ -1,21 +1,8 @@
 //! Configuration primitives for the ADXL372 driver.
 
 use crate::params::{
-    AutoSleep,
-    Bandwidth,
-    ExtClk,
-    ExtSync,
-    HpfDisable,
-    InstantOnThreshold,
-    I2cHsmEn,
-    LinkLoopMode,
-    LowNoise,
-    LpfDisable,
-    OutputDataRate,
-    PowerMode,
-    SettleFilter,
-    UserOrDisable,
-    WakeUpRate,
+    AutoSleep, Bandwidth, ExtClk, ExtSync, HpfDisable, I2cHsmEn, InstantOnThreshold, LinkLoopMode,
+    LowNoise, LpfDisable, OutputDataRate, PowerMode, SettleFilter, UserOrDisable, WakeUpRate,
 };
 
 /// User-facing configuration for the ADXL372 sensor.

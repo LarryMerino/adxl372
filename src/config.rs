@@ -180,7 +180,7 @@ impl Default for Config {
             bandwidth: Bandwidth::Bw200Hz,
             i2c_hsm_en: I2cHsmEn::Disabled,
             instant_on_threshold: InstantOnThreshold::Low,
-            filter_settle: SettleFilter::Ms16,
+            filter_settle: SettleFilter::Ms370,
             lpf_disable: LpfDisable::Enabled,
             hpf_disable: HpfDisable::Enabled,
             power_mode: PowerMode::Standby,

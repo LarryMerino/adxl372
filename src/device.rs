@@ -149,11 +149,13 @@ where
         delay.delay_ms(POWER_UP_TO_STANDBY_DELAY_MS);
         self.force_power_mode(PowerMode::Standby)?;
         self.reset()?;
-        self.configure(self.config)?;
+        self.configure(self.config, delay)?;
         Ok(())
     }
 
     /// Applies a new configuration to the device.
+    ///
+    /// Automatically waits for the filter settle period when entering measurement mode.
     ///
     /// Planned helper pipeline for the forthcoming register programming:
     /// 1. `apply_timing_config()` – programs `TIMING` (ODR, wake-up rate, ext sync/clk)
@@ -164,15 +166,32 @@ where
     /// 6. `apply_interrupt_config()` – programs interrupt/fault signaling behaviour
     ///
     /// Each helper will be wired up once its corresponding register logic is implemented.
-    pub fn configure(&mut self, config: Config) -> Result<(), CommE> {
+    pub fn configure(&mut self, config: Config, delay: &mut impl DelayNs) -> Result<(), CommE> {
         config.validate().map_err(|_| Error::InvalidConfig)?;
+
+        let previous_mode = self.config.power_mode;
+        let next_mode = config.power_mode;
 
         self.apply_timing_config(&config)?;
         self.apply_measurement_config(&config)?;
         self.apply_power_control_config(&config)?;
 
         self.config = config;
+
+        if !matches!(previous_mode, PowerMode::Standby) && matches!(next_mode, PowerMode::Measure) {
+            self.wait_filter_settle(delay);
+        }
         Ok(())
+    }
+
+    /// Waits for the configured filter settle time.
+    pub fn wait_filter_settle(&self, delay: &mut impl DelayNs) {
+        #[cfg(feature = "defmt")]
+        defmt::info!(
+            "waiting for filter settle: {} ms",
+            self.config.filter_settle.millis()
+        );
+        delay.delay_ms(self.config.filter_settle.millis() as u32);
     }
 
     /// Returns a shared reference to the active configuration.
@@ -296,23 +315,24 @@ where
     }
 
     /// Updates `POWER_CTL` fields that do not require additional sequencing.
+    ///
+    /// Note: this method does not wait for the configured filter settle time when switching
+    /// into measurement mode. Call [`wait_filter_settle`](Self::wait_filter_settle) after
+    /// entering measurement mode if needed.
     pub fn configure_power_ctl(
         &mut self,
-        hpf_disable: Option<HpfDisable>,
-        lpf_disable: Option<LpfDisable>,
+        i2c_hsm_en: Option<I2cHsmEn>,
         instant_on_threshold: Option<InstantOnThreshold>,
         filter_settle: Option<SettleFilter>,
-        i2c_hsm_en: Option<I2cHsmEn>,
+        lpf_disable: Option<LpfDisable>,
+        hpf_disable: Option<HpfDisable>,
+        mode: Option<PowerMode>,
     ) -> Result<(), CommE> {
         self.update_power_control(|power| {
-            if let Some(setting) = hpf_disable {
-                power.set_hpf_disable(matches!(setting, HpfDisable::Disabled));
+            if let Some(setting) = i2c_hsm_en {
+                power.set_i2c_high_speed_enable(matches!(setting, I2cHsmEn::Enabled));
             }
-
-            if let Some(setting) = lpf_disable {
-                power.set_lpf_disable(matches!(setting, LpfDisable::Disabled));
-            }
-
+            
             if let Some(threshold) = instant_on_threshold {
                 power.set_instant_on_threshold(threshold);
             }
@@ -321,11 +341,18 @@ where
                 power.set_filter_settle(settle);
             }
 
-            if let Some(setting) = i2c_hsm_en {
-                power.set_i2c_high_speed_enable(matches!(setting, I2cHsmEn::Enabled));
+            if let Some(setting) = lpf_disable {
+                power.set_lpf_disable(matches!(setting, LpfDisable::Disabled));
             }
-        })?;
-        Ok(())
+            
+            if let Some(setting) = hpf_disable {
+                power.set_hpf_disable(matches!(setting, HpfDisable::Disabled));
+            }
+
+            if let Some(mode) = mode {
+                power.set_mode(mode);
+            }
+        })
     }
 
     // ==================================================================

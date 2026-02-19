@@ -283,3 +283,306 @@ where
         timed_out,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    extern crate std;
+
+    use super::*;
+    use crate::config::Config;
+    use crate::registers::{REG_POWER_CTL, REG_RESET, REG_SELF_TEST, REG_XDATA_H, RESET_COMMAND};
+    use core::convert::Infallible;
+    use embedded_hal_mock::eh1::delay::{CheckedDelay, Transaction};
+    use std::vec::Vec;
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    enum Expectation {
+        ReadRegister { register: u8, value: u8 },
+        WriteRegister { register: u8, value: u8 },
+        ReadMany { register: u8, data: [u8; 6] },
+    }
+
+    struct MockInterface {
+        expectations: Vec<Expectation>,
+        index: usize,
+    }
+
+    impl MockInterface {
+        fn new(expectations: Vec<Expectation>) -> Self {
+            Self {
+                expectations,
+                index: 0,
+            }
+        }
+
+        fn next_expectation(&mut self) -> Expectation {
+            if self.index >= self.expectations.len() {
+                panic!("unexpected interface call");
+            }
+            let expectation = self.expectations[self.index].clone();
+            self.index += 1;
+            expectation
+        }
+    }
+
+    impl Drop for MockInterface {
+        fn drop(&mut self) {
+            assert_eq!(
+                self.index,
+                self.expectations.len(),
+                "not all interface expectations consumed"
+            );
+        }
+    }
+
+    impl Adxl372Interface for MockInterface {
+        type Error = Infallible;
+
+        fn write_register(
+            &mut self,
+            register: u8,
+            value: u8,
+        ) -> core::result::Result<(), Self::Error> {
+            match self.next_expectation() {
+                Expectation::WriteRegister {
+                    register: expected_reg,
+                    value: expected_value,
+                } => {
+                    assert_eq!(register, expected_reg, "write register mismatch");
+                    assert_eq!(value, expected_value, "write value mismatch");
+                }
+                other => panic!("unexpected write_register call: {other:?}"),
+            }
+            Ok(())
+        }
+
+        fn read_register(&mut self, register: u8) -> core::result::Result<u8, Self::Error> {
+            match self.next_expectation() {
+                Expectation::ReadRegister {
+                    register: expected_reg,
+                    value,
+                } => {
+                    assert_eq!(register, expected_reg, "read register mismatch");
+                    Ok(value)
+                }
+                other => panic!("unexpected read_register call: {other:?}"),
+            }
+        }
+
+        fn read_many(
+            &mut self,
+            register: u8,
+            buf: &mut [u8],
+        ) -> core::result::Result<(), Self::Error> {
+            match self.next_expectation() {
+                Expectation::ReadMany {
+                    register: expected_reg,
+                    data,
+                } => {
+                    assert_eq!(register, expected_reg, "read_many register mismatch");
+                    assert_eq!(buf.len(), data.len(), "read_many length mismatch");
+                    buf.copy_from_slice(&data);
+                }
+                other => panic!("unexpected read_many call: {other:?}"),
+            }
+            Ok(())
+        }
+
+        fn write_many(
+            &mut self,
+            register: u8,
+            data: &[u8],
+        ) -> core::result::Result<(), Self::Error> {
+            panic!(
+                "unexpected write_many call: register={register:#04x}, len={}",
+                data.len()
+            );
+        }
+    }
+
+    fn axis_bytes(value: i16) -> [u8; 2] {
+        let raw = (value << 4) as i16;
+        raw.to_be_bytes()
+    }
+
+    fn sample_bytes(z: i16) -> [u8; 6] {
+        let [x_msb, x_lsb] = axis_bytes(0);
+        let [y_msb, y_lsb] = axis_bytes(0);
+        let [z_msb, z_lsb] = axis_bytes(z);
+        [x_msb, x_lsb, y_msb, y_lsb, z_msb, z_lsb]
+    }
+
+    fn build_success_expectations() -> Vec<Expectation> {
+        let mut expectations = Vec::new();
+        expectations.push(Expectation::WriteRegister {
+            register: REG_RESET,
+            value: RESET_COMMAND,
+        });
+        expectations.push(Expectation::ReadRegister {
+            register: REG_POWER_CTL,
+            value: 0x00,
+        });
+        expectations.push(Expectation::WriteRegister {
+            register: REG_POWER_CTL,
+            value: 0x03,
+        });
+        expectations.push(Expectation::ReadRegister {
+            register: REG_SELF_TEST,
+            value: 0x00,
+        });
+        expectations.push(Expectation::ReadRegister {
+            register: REG_SELF_TEST,
+            value: 0x00,
+        });
+        expectations.push(Expectation::WriteRegister {
+            register: REG_SELF_TEST,
+            value: 0x01,
+        });
+        expectations.push(Expectation::ReadRegister {
+            register: REG_SELF_TEST,
+            value: 0x00,
+        });
+
+        for idx in 0..40 {
+            let z = if idx < 20 { 0 } else { 10 };
+            expectations.push(Expectation::ReadRegister {
+                register: REG_SELF_TEST,
+                value: 0x00,
+            });
+            expectations.push(Expectation::ReadMany {
+                register: REG_XDATA_H,
+                data: sample_bytes(z),
+            });
+        }
+
+        expectations.push(Expectation::ReadRegister {
+            register: REG_SELF_TEST,
+            value: 0x06,
+        });
+        expectations.push(Expectation::ReadRegister {
+            register: REG_SELF_TEST,
+            value: 0x06,
+        });
+        expectations.push(Expectation::WriteRegister {
+            register: REG_RESET,
+            value: RESET_COMMAND,
+        });
+        expectations
+    }
+
+    fn build_timeout_expectations() -> Vec<Expectation> {
+        let mut expectations = Vec::new();
+        expectations.push(Expectation::WriteRegister {
+            register: REG_RESET,
+            value: RESET_COMMAND,
+        });
+        expectations.push(Expectation::ReadRegister {
+            register: REG_POWER_CTL,
+            value: 0x00,
+        });
+        expectations.push(Expectation::WriteRegister {
+            register: REG_POWER_CTL,
+            value: 0x03,
+        });
+        expectations.push(Expectation::ReadRegister {
+            register: REG_SELF_TEST,
+            value: 0x00,
+        });
+        expectations.push(Expectation::ReadRegister {
+            register: REG_SELF_TEST,
+            value: 0x00,
+        });
+        expectations.push(Expectation::WriteRegister {
+            register: REG_SELF_TEST,
+            value: 0x01,
+        });
+        expectations.push(Expectation::ReadRegister {
+            register: REG_SELF_TEST,
+            value: 0x00,
+        });
+
+        for _ in 0..200 {
+            expectations.push(Expectation::ReadRegister {
+                register: REG_SELF_TEST,
+                value: 0x00,
+            });
+            expectations.push(Expectation::ReadMany {
+                register: REG_XDATA_H,
+                data: sample_bytes(0),
+            });
+        }
+
+        expectations.push(Expectation::ReadRegister {
+            register: REG_SELF_TEST,
+            value: 0x00,
+        });
+        expectations.push(Expectation::WriteRegister {
+            register: REG_RESET,
+            value: RESET_COMMAND,
+        });
+        expectations
+    }
+
+    fn build_success_delay() -> CheckedDelay {
+        let mut transactions = Vec::new();
+        transactions.push(Transaction::delay_ms(SELF_TEST_SETTLE_DELAY_MS));
+        transactions.push(Transaction::delay_ms(u32::from(
+            SELF_TEST_ACTIVATION_GUARD_MS,
+        )));
+        for _ in 0..40 {
+            transactions.push(Transaction::delay_ns(SELF_TEST_SAMPLE_PERIOD_NS));
+        }
+        CheckedDelay::new(&transactions)
+    }
+
+    fn build_timeout_delay() -> CheckedDelay {
+        let mut transactions = Vec::new();
+        transactions.push(Transaction::delay_ms(SELF_TEST_SETTLE_DELAY_MS));
+        transactions.push(Transaction::delay_ms(u32::from(
+            SELF_TEST_ACTIVATION_GUARD_MS,
+        )));
+        for _ in 0..200 {
+            transactions.push(Transaction::delay_ns(SELF_TEST_SAMPLE_PERIOD_NS));
+        }
+        CheckedDelay::new(&transactions)
+    }
+
+    #[test]
+    fn run_self_test_reports_pass_when_delta_and_flag_ok() {
+        let expectations = build_success_expectations();
+        let interface = MockInterface::new(expectations);
+        let config = Config::default();
+        let mut device = Adxl372::new(interface, config);
+
+        let mut delay = build_success_delay();
+        let report = run_self_test(&mut device, &mut delay).expect("self-test failed");
+        delay.done();
+
+        assert!(report.passed, "self-test should pass");
+        assert_eq!(report.baseline_avg_z, 0);
+        assert_eq!(report.stimulated_avg_z, 10);
+        assert_eq!(report.delta_z_lsb, 10);
+        assert_eq!(
+            report.samples_per_window,
+            SELF_TEST_SAMPLES_PER_WINDOW as u16
+        );
+        assert!(report.user_flag);
+        assert!(!report.timed_out);
+    }
+
+    #[test]
+    fn run_self_test_reports_timeout() {
+        let expectations = build_timeout_expectations();
+        let interface = MockInterface::new(expectations);
+        let config = Config::default();
+        let mut device = Adxl372::new(interface, config);
+
+        let mut delay = build_timeout_delay();
+        let report = run_self_test(&mut device, &mut delay).expect("self-test failed");
+        delay.done();
+
+        assert!(!report.passed, "self-test must fail on timeout");
+        assert!(report.timed_out, "timeout flag should be set");
+        assert!(!report.user_flag, "user flag should be false on timeout");
+    }
+}

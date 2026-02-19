@@ -10,6 +10,8 @@ pub enum Error<E> {
     Interface(E),
     /// The provided configuration parameters are invalid.
     InvalidConfig,
+    /// The self-test did not pass.
+    SelfTestFailed,
     /// The requested operation is not available yet.
     NotReady,
     /// The peripheral did not report the expected identification values.

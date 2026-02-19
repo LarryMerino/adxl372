@@ -143,10 +143,17 @@ where
     ///
     /// Enforces the datasheet power-up-to-standby delay before issuing any commands so callers
     /// do not need to provide their own wait after reset or power ramp.
+    ///
+    /// This initialization sequence runs the ER001 self-test prior to applying configuration.
     pub fn init(&mut self, delay: &mut impl DelayNs) -> Result<(), CommE> {
+        delay.delay_ms(POWER_UP_TO_STANDBY_DELAY_MS);
+
         self.config.validate().map_err(|_| Error::InvalidConfig)?;
 
-        delay.delay_ms(POWER_UP_TO_STANDBY_DELAY_MS);
+        if !self.run_self_test(delay)?.passed {
+            return Err(Error::SelfTestFailed);
+        }
+
         self.force_power_mode(PowerMode::Standby)?;
         self.reset()?;
         self.configure(self.config, delay)?;
@@ -332,7 +339,7 @@ where
             if let Some(setting) = i2c_hsm_en {
                 power.set_i2c_high_speed_enable(matches!(setting, I2cHsmEn::Enabled));
             }
-            
+
             if let Some(threshold) = instant_on_threshold {
                 power.set_instant_on_threshold(threshold);
             }
@@ -344,7 +351,7 @@ where
             if let Some(setting) = lpf_disable {
                 power.set_lpf_disable(matches!(setting, LpfDisable::Disabled));
             }
-            
+
             if let Some(setting) = hpf_disable {
                 power.set_hpf_disable(matches!(setting, HpfDisable::Disabled));
             }
@@ -461,7 +468,19 @@ where
     /// other configuration helper. After the self-test finishes you must re-apply your desired
     /// configuration because all registers have been returned to their power-on defaults.
     pub fn run_self_test(&mut self, delay: &mut impl DelayNs) -> Result<SelfTestReport, CommE> {
-        run_self_test(self, delay)
+        let report = run_self_test(self, delay)?;
+        #[cfg(feature = "defmt")]
+        defmt::info!(
+            "self-test ejecutado: passed={}, baseline_avg_z={}, stimulated_avg_z={}, delta_z_lsb={}, samples_per_window={}, user_flag={}, timed_out={}",
+            report.passed,
+            report.baseline_avg_z,
+            report.stimulated_avg_z,
+            report.delta_z_lsb,
+            report.samples_per_window,
+            report.user_flag,
+            report.timed_out
+        );
+        Ok(report)
     }
 
     // ==================================================================

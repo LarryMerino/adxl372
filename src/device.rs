@@ -5,6 +5,8 @@ use crate::error::{Error, Result};
 use crate::fifo::{FifoSettings, Sample};
 use crate::interface::Adxl372Interface;
 use crate::interface::spi::SpiInterface;
+#[cfg(feature = "defmt")]
+use crate::log::LOG_TAG;
 use crate::params::{
     AutoSleep, Bandwidth, ExtClk, ExtSync, FifoFormat, FifoMode, HpfDisable, I2cHsmEn,
     InstantOnThreshold, LinkLoopMode, LowNoise, LpfDisable, OutputDataRate, PowerMode,
@@ -195,7 +197,8 @@ where
     pub fn wait_filter_settle(&self, delay: &mut impl DelayNs) {
         #[cfg(feature = "defmt")]
         defmt::info!(
-            "waiting for filter settle: {} ms",
+            "{} Waiting for filter settle: {} ms",
+            LOG_TAG,
             self.config.filter_settle.millis()
         );
         delay.delay_ms(self.config.filter_settle.millis() as u32);
@@ -470,8 +473,11 @@ where
     pub fn run_self_test(&mut self, delay: &mut impl DelayNs) -> Result<SelfTestReport, CommE> {
         let report = run_self_test(self, delay)?;
         #[cfg(feature = "defmt")]
+        defmt::info!("{} Self Test executed", LOG_TAG);
+        #[cfg(feature = "defmt")]
         defmt::info!(
-            "self-test ejecutado: passed={}, baseline_avg_z={}, stimulated_avg_z={}, delta_z_lsb={}, samples_per_window={}, user_flag={}, timed_out={}",
+            "{} Self Test Report: passed={}, baseline_avg_z={}, stimulated_avg_z={}, delta_z_lsb={}, samples_per_window={}, user_flag={}, timed_out={}",
+            LOG_TAG,
             report.passed,
             report.baseline_avg_z,
             report.stimulated_avg_z,

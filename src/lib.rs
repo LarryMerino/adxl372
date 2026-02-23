@@ -6,6 +6,7 @@ pub mod config;
 pub mod device;
 pub mod fifo;
 pub mod interface;
+mod log;
 pub mod params;
 pub mod registers;
 pub mod self_test;

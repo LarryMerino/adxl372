@@ -234,8 +234,7 @@ where
             break;
         }
 
-        let frame = device.read_xyz_raw()?;
-        let z = frame[2];
+        let z = device.read_z_raw()?;
 
         if baseline_count < target_samples {
             baseline_sum = baseline_sum.saturating_add(z);
@@ -290,7 +289,7 @@ mod tests {
 
     use super::*;
     use crate::config::Config;
-    use crate::registers::{REG_POWER_CTL, REG_RESET, REG_SELF_TEST, REG_XDATA_H, RESET_COMMAND};
+    use crate::registers::{REG_POWER_CTL, REG_RESET, REG_SELF_TEST, REG_ZDATA_H, RESET_COMMAND};
     use core::convert::Infallible;
     use embedded_hal_mock::eh1::delay::{CheckedDelay, Transaction};
     use std::vec::Vec;
@@ -299,7 +298,7 @@ mod tests {
     enum Expectation {
         ReadRegister { register: u8, value: u8 },
         WriteRegister { register: u8, value: u8 },
-        ReadMany { register: u8, data: [u8; 6] },
+        ReadMany { register: u8, data: [u8; 2] },
     }
 
     struct MockInterface {
@@ -400,16 +399,9 @@ mod tests {
         }
     }
 
-    fn axis_bytes(value: i16) -> [u8; 2] {
-        let raw = (value << 4) as i16;
+    fn sample_bytes(z: i16) -> [u8; 2] {
+        let raw = (z << 4) as i16;
         raw.to_be_bytes()
-    }
-
-    fn sample_bytes(z: i16) -> [u8; 6] {
-        let [x_msb, x_lsb] = axis_bytes(0);
-        let [y_msb, y_lsb] = axis_bytes(0);
-        let [z_msb, z_lsb] = axis_bytes(z);
-        [x_msb, x_lsb, y_msb, y_lsb, z_msb, z_lsb]
     }
 
     fn build_success_expectations() -> Vec<Expectation> {
@@ -450,7 +442,7 @@ mod tests {
                 value: 0x00,
             });
             expectations.push(Expectation::ReadMany {
-                register: REG_XDATA_H,
+                register: REG_ZDATA_H,
                 data: sample_bytes(z),
             });
         }
@@ -507,7 +499,7 @@ mod tests {
                 value: 0x00,
             });
             expectations.push(Expectation::ReadMany {
-                register: REG_XDATA_H,
+                register: REG_ZDATA_H,
                 data: sample_bytes(0),
             });
         }

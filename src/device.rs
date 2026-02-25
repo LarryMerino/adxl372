@@ -209,11 +209,6 @@ where
         &self.config
     }
 
-    /// Returns a mutable reference to the active configuration.
-    pub fn config_mut(&mut self) -> &mut Config {
-        &mut self.config
-    }
-
     /// Issues a soft reset sequence.
     pub fn reset(&mut self) -> Result<(), CommE> {
         self.interface

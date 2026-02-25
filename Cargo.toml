@@ -1,6 +1,7 @@
 [package]
 name = "adxl372"
 description = "`#![no_std]` driver for the Analog Devices ADXL372 high-g 3-axis MEMS accelerometer."
+authors = ["Larry Merino <merino17@icloud.com>"]
 categories = ["no-std", "embedded", "hardware-support"]
 keywords = ["embedded-hal", "analog-devices", "accelerometer"]
 version = "0.1.0"

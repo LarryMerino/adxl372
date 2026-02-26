@@ -1,4 +1,22 @@
-//! Configuration primitives for the ADXL372 driver.
+//! High-level configuration and validation API for the ADXL372 driver.
+//!
+//! This module defines the high-level [`Config`] structure, a builder-style API for
+//! constructing it, and validation rules that enforce datasheet constraints.
+//!
+//! # Examples
+//!
+//! ```rust,no_run
+//! use adxl372::config::Config;
+//! use adxl372::params::{Bandwidth, OutputDataRate, PowerMode};
+//!
+//! let config = Config::new()
+//!     .odr(OutputDataRate::Od6400Hz)
+//!     .bandwidth(Bandwidth::Bw1600Hz)
+//!     .power_mode(PowerMode::Measure)
+//!     .build();
+//!
+//! config.validate().unwrap();
+//! ```
 
 use crate::params::{
     AutoSleep, Bandwidth, ExtClk, ExtSync, HpfDisable, I2cHsmEn, InstantOnThreshold, LinkLoopMode,
@@ -6,6 +24,9 @@ use crate::params::{
 };
 
 /// User-facing configuration for the ADXL372 sensor.
+///
+/// Prefer using the builder [`Config::new`] to construct instances and validate
+/// with [`Config::validate`] before applying configuration to the device.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Config {
     /// Output data rate selection.
@@ -47,6 +68,11 @@ impl Config {
     }
 
     /// Checks whether this configuration is valid according to datasheet rules.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ConfigError::NyquistViolation`] when the selected bandwidth exceeds
+    /// the $\frac{ODR}{2}$ Nyquist limit.
     pub fn validate(&self) -> core::result::Result<(), ConfigError> {
         if self.bandwidth.max_hz() * 2 > self.odr.hz() {
             return Err(ConfigError::NyquistViolation);
@@ -57,6 +83,8 @@ impl Config {
 }
 
 /// Builder for [`Config`] allowing piecemeal construction.
+///
+/// The builder starts from [`Config::default`] and allows overriding individual fields.
 #[derive(Debug, Clone, Copy)]
 pub struct ConfigBuilder {
     config: Config,

@@ -1,4 +1,19 @@
 //! Strongly typed parameter enumerations for the ADXL372 driver.
+//!
+//! These enums map directly to datasheet field encodings and are used across
+//! [`Config`](crate::config::Config) and the high-level driver APIs. Prefer these
+//! types over raw integers to keep configuration values valid and explicit.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use adxl372::params::{Bandwidth, OutputDataRate, PowerMode};
+//!
+//! let odr = OutputDataRate::Od6400Hz;
+//! let bw = Bandwidth::Bw1600Hz;
+//! let mode = PowerMode::Measure;
+//! let _ = (odr, bw, mode);
+//! ```
 
 use modular_bitfield::prelude::Specifier;
 

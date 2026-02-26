@@ -35,25 +35,25 @@ pub struct Adxl372<IFACE> {
 /// Combined view of the `STATUS` and `STATUS2` registers with explicit flags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StatusSnapshot {
-    /// STATUS[7] ERR_USER_REGS.
+    /// STATUS bit 7: ERR_USER_REGS.
     pub err_user_regs: bool,
-    /// STATUS[6] AWAKE.
+    /// STATUS bit 6: AWAKE.
     pub awake: bool,
-    /// STATUS[5] USER_NVM_BUSY.
+    /// STATUS bit 5: USER_NVM_BUSY.
     pub user_nvm_busy: bool,
-    /// STATUS[3] FIFO_OVR.
+    /// STATUS bit 3: FIFO_OVR.
     pub fifo_ovr: bool,
-    /// STATUS[2] FIFO_FULL.
+    /// STATUS bit 2: FIFO_FULL.
     pub fifo_full: bool,
-    /// STATUS[1] FIFO_RDY.
+    /// STATUS bit 1: FIFO_RDY.
     pub fifo_rdy: bool,
-    /// STATUS[0] DATA_RDY.
+    /// STATUS bit 0: DATA_RDY.
     pub data_rdy: bool,
-    /// STATUS2[6] ACTIVITY2.
+    /// STATUS2 bit 6: ACTIVITY2.
     pub activity2: bool,
-    /// STATUS2[5] ACTIVITY.
+    /// STATUS2 bit 5: ACTIVITY.
     pub activity: bool,
-    /// STATUS2[4] INACT.
+    /// STATUS2 bit 4: INACT.
     pub inact: bool,
 }
 

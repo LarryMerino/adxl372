@@ -5,8 +5,9 @@
     reason = "mem::forget is generally not safe to do with esp_hal types, especially those \
     holding buffers for the duration of a data transfer."
 )]
+#![deny(clippy::large_stack_frames)]
 
-use defmt::info;
+use defmt::{error, info};
 use esp_hal::clock::CpuClock;
 use esp_hal::main;
 use esp_hal::delay::Delay;
@@ -15,8 +16,6 @@ use esp_hal::spi::Mode;
 use esp_hal::spi::master::{Config as SpiConfig, Spi};
 use esp_hal::gpio::{Level, Output, OutputConfig};
 
-use panic_rtt_target as _;
-
 use embedded_hal_bus::spi::ExclusiveDevice;
 
 use adxl372::device::Adxl372;
@@ -24,22 +23,45 @@ use adxl372::config::Config;
 use adxl372::interface::spi::SpiInterface;
 use adxl372::params::{Bandwidth, OutputDataRate, PowerMode};
 
+#[panic_handler]
+fn panic(panic_info: &core::panic::PanicInfo) -> ! {
+    error!("{}", panic_info);
+    loop {}
+}
+
 // This creates a default app-descriptor required by the esp-idf bootloader.
 // For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
 esp_bootloader_esp_idf::esp_app_desc!();
 
+#[allow(
+    clippy::large_stack_frames,
+    reason = "it's not unusual to allocate larger buffers etc. in main"
+)]
 #[main]
 fn main() -> ! {
-    // generator version: 1.0.1
+    // generator version: 1.3.0
+    // generator parameters: --chip esp32c3 -o esp32c3-mini-1 -o probe-rs -o defmt
 
     rtt_target::rtt_init_defmt!();
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
 
-    
+    // The following pins are used to bootstrap the chip. They are available
+    // for use, but check the datasheet of the module for more information on them.
+    // - GPIO2
+    // - GPIO8
+    // - GPIO9
+    // These GPIO pins are in use by some feature of the module and should not be used.
+    let _ = peripherals.GPIO11;
+    let _ = peripherals.GPIO12;
+    let _ = peripherals.GPIO13;
+    let _ = peripherals.GPIO14;
+    let _ = peripherals.GPIO15;
+    let _ = peripherals.GPIO16;
+    let _ = peripherals.GPIO17;
 
-    let sclk = peripherals.GPIO6;
+        let sclk = peripherals.GPIO6;
     let miso = peripherals.GPIO2;
     let mosi = peripherals.GPIO7;
     let cs = Output::new(peripherals.GPIO10, Level::Low, OutputConfig::default());
@@ -80,5 +102,5 @@ fn main() -> ! {
         while delay_start.elapsed() < Duration::from_millis(500) {}
     }
 
-    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.0.0/examples/src/bin
+    // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.1.0/examples
 }

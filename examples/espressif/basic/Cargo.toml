@@ -13,7 +13,7 @@ test = false
 esp-hal = { version = "1.0.0", features = ["defmt", "esp32c3", "unstable"] }
 
 
-defmt                  = "1.0.1"
+defmt                  = "1.1.0"
 esp-bootloader-esp-idf = { version = "0.4.0", features = ["defmt", "esp32c3"] }
 
 embedded-hal           = { version = "1.0.0" }

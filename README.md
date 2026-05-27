@@ -1,11 +1,10 @@
 # ADXL372
 
-`no_std` driver for the Analog Devices ADXL372 high-g 3-axis MEMS accelerometer.
+`no_std` driver crate for the Analog Devices ADXL372 high-g 3-axis MEMS accelerometer, built on `embedded-hal` for portable use across microcontrollers.
 
-The driver targets microcontrollers and exposes a safe, typed API built on
-[`embedded-hal`](https://docs.rs/embedded-hal/) traits. It follows the datasheet's
-register settings and timing requirements and keeps core memory usage explicit by
-avoiding heap allocation.
+This crate provides a safe, typed interface for working with the ADXL372 on embedded targets. It is built on [`embedded-hal`](https://docs.rs/embedded-hal/) to stay portable across microcontroller platforms  
+
+The core driver follows the datasheet's register and timing requirements and keeps memory usage explicit by avoiding heap allocation.
 
 ## Features
 

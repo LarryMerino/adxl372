@@ -13,6 +13,15 @@ Optional Cargo features:
 
 - `defmt`: enable `defmt` logging for internal debug traces
 
+## Examples
+
+Examples for supported microcontroller targets are available in the
+`examples/` folder. The current set focuses on Espressif boards, and support
+for additional MCU families can be added over time.
+
+- [ESP32-C3 (esp-hal) basic SPI read](./examples/espressif/basic/)
+  - Initializes ADXL372 over SPI and reads raw X/Y/Z samples in a loop
+
 ## Usage
 
 Import the relevant HAL crate for your platform. For this example I'm using esp-hal on ESP32C3.

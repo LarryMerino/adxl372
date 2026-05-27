@@ -4,7 +4,7 @@
 
 This crate provides a safe, typed interface for working with the ADXL372 on embedded targets. It is built on [`embedded-hal`](https://docs.rs/embedded-hal/) to stay portable across microcontroller platforms  
 
-The core driver follows the datasheet's register and timing requirements and keeps memory usage explicit by avoiding heap allocation.
+The core driver follows the datasheet's register and timing requirements and keeps memory usage explicit by avoiding heap allocation
 
 ## Features
 
@@ -16,14 +16,14 @@ Optional Cargo features:
 
 Examples for supported microcontroller targets are available in the
 `examples/` folder. The current set focuses on Espressif boards, and support
-for additional MCU families can be added over time.
+for additional MCU families can be added over time
 
 - [ESP32-C3 (esp-hal) basic SPI read](./examples/espressif/basic/)
   - Initializes ADXL372 over SPI and reads raw X/Y/Z samples in a loop
 
 ## Usage
 
-Import the relevant HAL crate for your platform. For this example I'm using esp-hal on ESP32C3.
+Import the relevant HAL crate for your platform. For this example I'm using esp-hal on ESP32C3
 
 ```rust
 use adxl372::device::Adxl372;
@@ -87,6 +87,6 @@ fn main() -> ! {
 
 ## License
 
-Licensed under either of [Apache License, Version 2.0](./LICENSE-APACHE) or [MIT license](./LICENSE-MIT) at your option.
+Licensed under either of [Apache License, Version 2.0](./LICENSE-APACHE) or [MIT license](./LICENSE-MIT) at your option
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this crate by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this crate by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions

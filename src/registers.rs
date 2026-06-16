@@ -44,6 +44,10 @@ pub const REG_FIFO_DATA: u8 = 0x42;
 pub const REG_FIFO_SAMPLES: u8 = 0x39;
 /// Register address of `FIFO_CTL`.
 pub const REG_FIFO_CTL: u8 = 0x3A;
+/// Register address of `INT1_MAP`.
+pub const REG_INT1_MAP: u8 = 0x3B;
+/// Register address of `INT2_MAP`.
+pub const REG_INT2_MAP: u8 = 0x3C;
 /// Register address of `HPF`.
 pub const REG_HPF: u8 = 0x3C;
 /// Register address of `TIMING`.
@@ -189,6 +193,76 @@ impl From<FifoControl> for u8 {
     }
 }
 
+/// Bitfield representation of the `INT1_MAP` register (address `0x3B`).
+#[allow(unused_parens)]
+#[bitfield]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Int1Map {
+    // Map data-ready interrupt onto INT1 (bit 0).
+    pub data_ready: bool,
+    // Map FIFO-ready interrupt onto INT1 (bit 1).
+    pub fifo_ready: bool,
+    // Map FIFO-full interrupt onto INT1 (bit 2).
+    pub fifo_full: bool,
+    // Map FIFO-overrun interrupt onto INT1 (bit 3).
+    pub fifo_overrun: bool,
+    // Map inactivity interrupt onto INT1 (bit 4).
+    pub inactivity: bool,
+    // Map activity interrupt onto INT1 (bit 5).
+    pub activity: bool,
+    // Map awake status onto INT1 (bit 6).
+    pub awake: bool,
+    // Configure INT1 as active-low when set (bit 7).
+    pub active_low: bool,
+}
+
+impl From<u8> for Int1Map {
+    fn from(value: u8) -> Self {
+        Self::from_bytes([value])
+    }
+}
+
+impl From<Int1Map> for u8 {
+    fn from(value: Int1Map) -> Self {
+        value.into_bytes()[0]
+    }
+}
+
+/// Bitfield representation of the `INT2_MAP` register (address `0x3C`).
+#[allow(unused_parens)]
+#[bitfield]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Int2Map {
+    // Map data-ready interrupt onto INT2 (bit 0).
+    pub data_ready: bool,
+    // Map FIFO-ready interrupt onto INT2 (bit 1).
+    pub fifo_ready: bool,
+    // Map FIFO-full interrupt onto INT2 (bit 2).
+    pub fifo_full: bool,
+    // Map FIFO-overrun interrupt onto INT2 (bit 3).
+    pub fifo_overrun: bool,
+    // Map inactivity interrupt onto INT2 (bit 4).
+    pub inactivity: bool,
+    // Map activity interrupt onto INT2 (bit 5).
+    pub activity: bool,
+    // Map awake status onto INT2 (bit 6).
+    pub awake: bool,
+    // Configure INT2 as active-low when set (bit 7).
+    pub active_low: bool,
+}
+
+impl From<u8> for Int2Map {
+    fn from(value: u8) -> Self {
+        Self::from_bytes([value])
+    }
+}
+
+impl From<Int2Map> for u8 {
+    fn from(value: Int2Map) -> Self {
+        value.into_bytes()[0]
+    }
+}
+
 /// Bitfield representation of the `TIMING` register (address `0x3D`).
 #[allow(unused_parens)]
 #[bitfield]
@@ -326,6 +400,20 @@ impl Register for FifoControl {
     const RESET_VALUE: Option<Self::Raw> = Some(0x00);
 }
 
+impl Register for Int1Map {
+    type Raw = u8;
+    const ADDRESS: u8 = REG_INT1_MAP;
+    const ACCESS: RegisterAccess = RegisterAccess::ReadWrite;
+    const RESET_VALUE: Option<Self::Raw> = Some(0x00);
+}
+
+impl Register for Int2Map {
+    type Raw = u8;
+    const ADDRESS: u8 = REG_INT2_MAP;
+    const ACCESS: RegisterAccess = RegisterAccess::ReadWrite;
+    const RESET_VALUE: Option<Self::Raw> = Some(0x00);
+}
+
 impl Register for Timing {
     type Raw = u8;
     const ADDRESS: u8 = REG_TIMING;
@@ -408,5 +496,30 @@ mod tests {
         assert_eq!(decoded.odr(), OutputDataRate::Od1600Hz);
         assert_eq!(decoded.ext_sync(), ExtSync::Enabled);
         assert_eq!(decoded.ext_clk(), ExtClk::Disabled);
+    }
+
+    /// Ensures INT1_MAP bit assignments match the datasheet layout.
+    #[test]
+    fn int1_map_roundtrip() {
+        let map = Int1Map::new()
+            .with_data_ready(true)
+            .with_fifo_ready(false)
+            .with_fifo_full(true)
+            .with_fifo_overrun(false)
+            .with_inactivity(true)
+            .with_activity(false)
+            .with_awake(true)
+            .with_active_low(true);
+
+        assert_eq!(u8::from(map), 0b1101_0101);
+        let decoded = Int1Map::from(u8::from(map));
+        assert!(decoded.data_ready());
+        assert!(!decoded.fifo_ready());
+        assert!(decoded.fifo_full());
+        assert!(!decoded.fifo_overrun());
+        assert!(decoded.inactivity());
+        assert!(!decoded.activity());
+        assert!(decoded.awake());
+        assert!(decoded.active_low());
     }
 }

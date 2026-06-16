@@ -1,6 +1,6 @@
 [package]
 name = "adxl372"
-description = "`#![no_std]` driver for the Analog Devices ADXL372 high-g 3-axis MEMS accelerometer."
+description = "no_std driver crate for the Analog Devices ADXL372 high-g 3-axis MEMS accelerometer, built on embedded-hal for portable use across microcontrollers"
 authors = ["Larry Merino <merino17@icloud.com>"]
 categories = ["no-std", "embedded", "hardware-support"]
 keywords = ["embedded-hal", "analog-devices", "accelerometer"]

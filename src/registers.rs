@@ -36,10 +36,8 @@ pub const REG_YDATA_L: u8 = 0x0B;
 pub const REG_ZDATA_H: u8 = 0x0C;
 /// Register address of `ZDATA_L`.
 pub const REG_ZDATA_L: u8 = 0x0D;
-/// Register address of `TEMP_DATA`.
-pub const REG_TEMP_DATA: u8 = 0x0E;
-/// Register address of `FIFO_DATA`.
-pub const REG_FIFO_DATA: u8 = 0x42;
+/// Register address of `HPF`.
+pub const REG_HPF: u8 = 0x38;
 /// Register address of `FIFO_SAMPLES`.
 pub const REG_FIFO_SAMPLES: u8 = 0x39;
 /// Register address of `FIFO_CTL`.
@@ -48,8 +46,6 @@ pub const REG_FIFO_CTL: u8 = 0x3A;
 pub const REG_INT1_MAP: u8 = 0x3B;
 /// Register address of `INT2_MAP`.
 pub const REG_INT2_MAP: u8 = 0x3C;
-/// Register address of `HPF`.
-pub const REG_HPF: u8 = 0x3C;
 /// Register address of `TIMING`.
 pub const REG_TIMING: u8 = 0x3D;
 /// Register address of `MEASURE`.
@@ -60,6 +56,8 @@ pub const REG_POWER_CTL: u8 = 0x3F;
 pub const REG_SELF_TEST: u8 = 0x40;
 /// Register address of `RESET`.
 pub const REG_RESET: u8 = 0x41;
+/// Register address of `FIFO_DATA`.
+pub const REG_FIFO_DATA: u8 = 0x42;
 
 /// Access permissions encoded for each register.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -74,7 +74,7 @@ fn main() -> ! {
         .power_mode(PowerMode::Measurement)
         .build();
 
-    let mut accel_delay = Delay::new();
+    let mut accel_delay = hal::delay::Delay::new();
     accel_3_axis.init(&mut accel_delay, config).unwrap();
 
     loop {

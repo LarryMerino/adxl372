@@ -3,6 +3,7 @@ use embedded_hal::delay::DelayNs;
 use crate::config::Config; 
 use crate::interface::RegisterAccess;
 use crate::error::{DriverResult, Error};
+use crate::registers::{ReadableRegister, Reset, WritableRegister};
 
 // ADXL372 datasheet power-up to standby delay (milliseconds).
 const POWER_UP_TO_STANDBY_DELAY_MS: u32 = 5;
@@ -37,7 +38,25 @@ where IO: RegisterAccess
         todo!()
     }
 
-    pub fn reset(&self) -> DriverResult<(), IO::Error> {
-        todo!()
+    pub fn reset(&mut self) -> DriverResult<(), IO::Error> {
+        self.write_register::<Reset>(Reset::COMMAND)
+    }
+
+    fn write_register<R>(&mut self, value: u8) -> DriverResult<(), IO::Error> 
+    where 
+        R: WritableRegister
+    {
+        self.interface
+            .write_register(R::ADDRESS, value)
+            .map_err(Error::Interface)
+    }
+
+    fn read_register<R>(&mut self) -> DriverResult<u8, IO::Error> 
+    where
+        R:ReadableRegister
+    {
+        self.interface
+            .read_register(R::ADDRESS)
+            .map_err(Error::Interface)
     }
 }

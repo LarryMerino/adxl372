@@ -2,20 +2,16 @@ use modular_bitfield::prelude::*;
 
 use crate::params::{ClockSource, OutputDataRate, SyncMode, WakeUpRate};
 
-pub const REG_TIMING: u8 = 0x3D;
-pub const REG_RESET: u8 = 0x41;
-
-pub enum RegisterAccess {
-    ReadOnly,
-    WriteOnly,
-    ReadWrite,
-}
-
+/// Base trait implemented by every ADXL372 register
 pub trait Register {
     const ADDRESS: u8;
-    const ACCESS: RegisterAccess;
-    const RESET_VALUE: Option<u8>;
 }
+
+/// Marker trait for registers that can be read.
+pub trait ReadableRegister: Register {}
+
+/// Marker trait for registers that can be written.
+pub trait WritableRegister: Register {}
 
 pub struct Timing {
     pub odr: OutputDataRate,
@@ -25,9 +21,7 @@ pub struct Timing {
 }
 
 impl Register for Timing {
-    const ADDRESS: u8 = REG_TIMING;
-    const ACCESS: RegisterAccess = RegisterAccess::ReadWrite;
-    const RESET_VALUE: Option<u8> = Some(0x00);
+    const ADDRESS: u8 = 0x3D;
 }
 
 #[bitfield]
@@ -38,6 +32,14 @@ struct TimingBits {
     ext_sync: bool,
 }
 
+pub struct Reset;
 
-/// Soft reset command value written to the `RESET` register.
-pub const RESET_COMMAND: u8 = 0x52;
+impl Register for Reset {
+    const ADDRESS: u8 = 0x41;
+}
+
+impl WritableRegister for Reset {}
+
+impl Reset {
+    pub const COMMAND: u8 = 0x52;
+}

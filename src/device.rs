@@ -1,5 +1,4 @@
 use embedded_hal::delay::DelayNs;
-use embedded_hal::spi::SpiDevice;
 
 use crate::config::Config; 
 use crate::interface::RegisterAccess;
@@ -34,11 +33,11 @@ where IO: RegisterAccess
         todo!()
     }
 
-    pub fn read_config(&mut self) -> DriverResult<(), IO::Error> {
+    pub fn read_config(&mut self) -> DriverResult<Config, IO::Error> {
         todo!()
     }
 
-    pub fn reset(&self) -> DriverResult<Config, IO::Error> {
+    pub fn reset(&self) -> DriverResult<(), IO::Error> {
         todo!()
     }
 }

@@ -198,6 +198,64 @@ pub enum ExtSync {
     Enabled = 1,
 }
 
+/// Interrupt pin polarity configuration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InterruptPinPolarity {
+    /// Interrupt pin is active high.
+    ActiveHigh,
+    /// Interrupt pin is active low.
+    ActiveLow,
+}
+
+/// High-level mapping options for `INT1_MAP`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Int1InterruptConfig {
+    /// Interrupt output polarity.
+    pub polarity: InterruptPinPolarity,
+    /// Map DATA_RDY onto INT1.
+    pub data_ready: bool,
+    /// Map FIFO_RDY onto INT1.
+    pub fifo_ready: bool,
+    /// Map FIFO_FULL onto INT1.
+    pub fifo_full: bool,
+    /// Map FIFO_OVR onto INT1.
+    pub fifo_overrun: bool,
+    /// Map INACT onto INT1.
+    pub inactivity: bool,
+    /// Map ACTIVITY onto INT1.
+    pub activity: bool,
+    /// Map AWAKE status onto INT1.
+    pub awake: bool,
+}
+
+impl Int1InterruptConfig {
+    /// Returns `true` if any interrupt source is mapped to INT1.
+    pub const fn any_source_enabled(&self) -> bool {
+        self.data_ready
+            || self.fifo_ready
+            || self.fifo_full
+            || self.fifo_overrun
+            || self.inactivity
+            || self.activity
+            || self.awake
+    }
+}
+
+impl Default for Int1InterruptConfig {
+    fn default() -> Self {
+        Self {
+            polarity: InterruptPinPolarity::ActiveHigh,
+            data_ready: false,
+            fifo_ready: false,
+            fifo_full: false,
+            fifo_overrun: false,
+            inactivity: false,
+            activity: false,
+            awake: false,
+        }
+    }
+}
+
 /// I2C high-speed mode enable bit (`TIMING.I2C_HSM_EN`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Specifier)]
 #[repr(u8)]

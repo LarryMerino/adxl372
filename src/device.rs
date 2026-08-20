@@ -9,13 +9,13 @@ use crate::interface::spi::SpiInterface;
 use crate::log::LOG_TAG;
 use crate::params::{
     AutoSleep, Bandwidth, ExtClk, ExtSync, FifoFormat, FifoMode, HpfDisable, I2cHsmEn,
-    InstantOnThreshold, LinkLoopMode, LowNoise, LpfDisable, OutputDataRate, PowerMode,
-    SettleFilter, UserOrDisable, WakeUpRate,
+    InstantOnThreshold, Int1InterruptConfig, InterruptPinPolarity, LinkLoopMode, LowNoise,
+    LpfDisable, OutputDataRate, PowerMode, SettleFilter, UserOrDisable, WakeUpRate,
 };
 use crate::registers::{
-    EXPECTED_DEVID_AD, EXPECTED_DEVID_MST, EXPECTED_PART_ID, Measure, PowerControl, REG_DEVID_AD,
-    REG_MEASURE, REG_POWER_CTL, REG_RESET, REG_STATUS, REG_TIMING, REG_XDATA_H, REG_YDATA_H,
-    REG_ZDATA_H, RESET_COMMAND, Status, Status2, Timing,
+    EXPECTED_DEVID_AD, EXPECTED_DEVID_MST, EXPECTED_PART_ID, Int1Map, Measure, PowerControl,
+    REG_DEVID_AD, REG_INT1_MAP, REG_MEASURE, REG_POWER_CTL, REG_RESET, REG_STATUS, REG_TIMING,
+    REG_XDATA_H, REG_YDATA_H, REG_ZDATA_H, RESET_COMMAND, Status, Status2, Timing,
 };
 use crate::self_test::{SelfTestReport, run_self_test};
 use embedded_hal::delay::DelayNs;
@@ -184,6 +184,7 @@ where
         self.apply_timing_config(&config)?;
         self.apply_measurement_config(&config)?;
         self.apply_power_control_config(&config)?;
+        self.apply_interrupt_config(&config)?;
 
         self.config = config;
 
@@ -207,6 +208,23 @@ where
     /// Returns a shared reference to the active configuration.
     pub fn config(&self) -> &Config {
         &self.config
+    }
+
+    /// Returns the current interrupt mapping configuration for INT1.
+    pub fn read_int1_map(&mut self) -> Result<Int1InterruptConfig, CommE> {
+        let raw = self
+            .interface
+            .read_register(REG_INT1_MAP)
+            .map_err(Error::from)?;
+
+        Ok(Self::int1_config_from_register(Int1Map::from(raw)))
+    }
+
+    /// Applies an INT1 interrupt routing configuration.
+    pub fn configure_int1_map(&mut self, int1_map: Int1InterruptConfig) -> Result<(), CommE> {
+        self.update_int1_map(|current| {
+            *current = int1_map;
+        })
     }
 
     /// Issues a soft reset sequence.
@@ -369,6 +387,35 @@ where
         i16::from_be_bytes([msb, lsb]) >> 4
     }
 
+    fn int1_config_from_register(map: Int1Map) -> Int1InterruptConfig {
+        Int1InterruptConfig {
+            polarity: if map.active_low() {
+                InterruptPinPolarity::ActiveLow
+            } else {
+                InterruptPinPolarity::ActiveHigh
+            },
+            data_ready: map.data_ready(),
+            fifo_ready: map.fifo_ready(),
+            fifo_full: map.fifo_full(),
+            fifo_overrun: map.fifo_overrun(),
+            inactivity: map.inactivity(),
+            activity: map.activity(),
+            awake: map.awake(),
+        }
+    }
+
+    fn int1_config_to_register(config: Int1InterruptConfig) -> Int1Map {
+        Int1Map::new()
+            .with_data_ready(config.data_ready)
+            .with_fifo_ready(config.fifo_ready)
+            .with_fifo_full(config.fifo_full)
+            .with_fifo_overrun(config.fifo_overrun)
+            .with_inactivity(config.inactivity)
+            .with_activity(config.activity)
+            .with_awake(config.awake)
+            .with_active_low(matches!(config.polarity, InterruptPinPolarity::ActiveLow))
+    }
+
     /// Reads a raw acceleration triplet.
     pub fn read_xyz_raw(&mut self) -> Result<[i16; 3], CommE> {
         let mut raw = [0u8; RAW_AXIS_BYTES];
@@ -515,6 +562,10 @@ where
             return Err(Error::InvalidConfig);
         }
 
+        if matches!(timing.ext_clk(), ExtClk::Enabled) && self.config.int1_map.any_source_enabled() {
+            return Err(Error::InvalidConfig);
+        }
+
         let updated = u8::from(timing);
         if updated != current {
             self.interface
@@ -649,6 +700,35 @@ where
         Ok(())
     }
 
+    fn update_int1_map<F>(&mut self, mut mutate: F) -> Result<(), CommE>
+    where
+        F: FnMut(&mut Int1InterruptConfig),
+    {
+        let current_raw = self
+            .interface
+            .read_register(REG_INT1_MAP)
+            .map_err(Error::from)?;
+
+        let current = Self::int1_config_from_register(Int1Map::from(current_raw));
+        let mut updated = current;
+        mutate(&mut updated);
+
+        if matches!(self.config.ext_clk, ExtClk::Enabled) && updated.any_source_enabled() {
+            return Err(Error::InvalidConfig);
+        }
+
+        let updated_raw = u8::from(Self::int1_config_to_register(updated));
+        if updated_raw != current_raw {
+            self.interface
+                .write_register(REG_INT1_MAP, updated_raw)
+                .map_err(Error::from)?;
+        }
+
+        self.config.int1_map = updated;
+
+        Ok(())
+    }
+
     #[allow(dead_code)]
     fn apply_fifo_config(&mut self, config: &Config) -> Result<(), CommE> {
         let _ = config;
@@ -663,7 +743,8 @@ where
 
     #[allow(dead_code)]
     fn apply_interrupt_config(&mut self, config: &Config) -> Result<(), CommE> {
-        let _ = config;
-        Err(Error::NotReady)
+        self.update_int1_map(|int1_map| {
+            *int1_map = config.int1_map;
+        })
     }
 }

@@ -20,7 +20,8 @@
 
 use crate::params::{
     AutoSleep, Bandwidth, ExtClk, ExtSync, HpfDisable, I2cHsmEn, InstantOnThreshold, LinkLoopMode,
-    LowNoise, LpfDisable, OutputDataRate, PowerMode, SettleFilter, UserOrDisable, WakeUpRate,
+    Int1InterruptConfig, LowNoise, LpfDisable, OutputDataRate, PowerMode, SettleFilter,
+    UserOrDisable, WakeUpRate,
 };
 
 /// User-facing configuration for the ADXL372 sensor.
@@ -37,6 +38,8 @@ pub struct Config {
     pub ext_clk: ExtClk,
     /// External sync/trigger enable.
     pub ext_sync: ExtSync,
+    /// Interrupt routing options for the INT1 pin.
+    pub int1_map: Int1InterruptConfig,
     /// User overrange disable behavior.
     pub user_or_disable: UserOrDisable,
     /// Autosleep operating mode.
@@ -76,6 +79,10 @@ impl Config {
     pub fn validate(&self) -> core::result::Result<(), ConfigError> {
         if self.bandwidth.max_hz() * 2 > self.odr.hz() {
             return Err(ConfigError::NyquistViolation);
+        }
+
+        if matches!(self.ext_clk, ExtClk::Enabled) && self.int1_map.any_source_enabled() {
+            return Err(ConfigError::Int1ConflictWithExtClk);
         }
 
         Ok(())
@@ -125,6 +132,12 @@ impl ConfigBuilder {
     /// Enables the external sync selection.
     pub fn ext_sync(mut self, ext_sync: ExtSync) -> Self {
         self.config.ext_sync = ext_sync;
+        self
+    }
+
+    /// Sets interrupt routing options for INT1.
+    pub fn int1_map(mut self, int1_map: Int1InterruptConfig) -> Self {
+        self.config.int1_map = int1_map;
         self
     }
 
@@ -201,6 +214,7 @@ impl Default for Config {
             wakeup_rate: WakeUpRate::Ms52,
             ext_clk: ExtClk::Disabled,
             ext_sync: ExtSync::Disabled,
+            int1_map: Int1InterruptConfig::default(),
             user_or_disable: UserOrDisable::Enabled,
             autosleep: AutoSleep::Disabled,
             linkloop: LinkLoopMode::Default,
@@ -221,4 +235,41 @@ impl Default for Config {
 pub enum ConfigError {
     /// Requested bandwidth violates Nyquist sampling limits for the chosen ODR.
     NyquistViolation,
+    /// INT1 cannot be used for interrupts when external clock is enabled.
+    Int1ConflictWithExtClk,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::params::{InterruptPinPolarity, Int1InterruptConfig};
+
+    #[test]
+    fn validate_rejects_int1_when_ext_clk_enabled() {
+        let int1_map = Int1InterruptConfig {
+            polarity: InterruptPinPolarity::ActiveHigh,
+            data_ready: true,
+            ..Int1InterruptConfig::default()
+        };
+
+        let cfg = Config::new()
+            .ext_clk(ExtClk::Enabled)
+            .int1_map(int1_map)
+            .build();
+
+        assert_eq!(cfg.validate(), Err(ConfigError::Int1ConflictWithExtClk));
+    }
+
+    #[test]
+    fn validate_accepts_int1_when_ext_clk_disabled() {
+        let int1_map = Int1InterruptConfig {
+            polarity: InterruptPinPolarity::ActiveHigh,
+            data_ready: true,
+            ..Int1InterruptConfig::default()
+        };
+
+        let cfg = Config::new().int1_map(int1_map).build();
+
+        assert_eq!(cfg.validate(), Ok(()));
+    }
 }

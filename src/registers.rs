@@ -26,10 +26,10 @@ impl Register for Timing {
 
 #[bitfield]
 struct TimingBits {
-    odr: B3,
-    wakeup_rate: B3,
-    ext_clk: bool,
     ext_sync: bool,
+    ext_clk: bool,
+    wakeup_rate: B3,
+    odr: B3,
 }
 
 pub struct Reset;

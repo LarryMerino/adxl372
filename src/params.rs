@@ -33,6 +33,43 @@ pub enum WakeUpRate {
 }
 
 #[derive(Clone, Copy)]
+pub enum ClockSource {
+    Internal,
+    External,
+}
+
+#[derive(Clone, Copy)]
+pub enum SyncMode {
+    Internal,
+    External,
+}
+
+#[derive(Clone, Copy)]
+pub enum OverrangeDetection {
+    Enabled,
+    Disabled,
+}
+
+#[derive(Clone, Copy)]
+pub enum AutoSleep {
+    Disabled,
+    Enabled,
+}
+
+#[derive(Clone, Copy)]
+pub enum ActivityProcessing {
+    Independent,
+    Linked,
+    Looped,
+}
+
+#[derive(Clone, Copy)]
+pub enum NoiseMode {
+    Normal,
+    LowNoise,
+}
+
+#[derive(Clone, Copy)]
 pub enum Bandwidth {
     Hz200,
     Hz400,
@@ -43,7 +80,7 @@ pub enum Bandwidth {
 
 impl Bandwidth {
     /// Returns the maximum supported frequency in hertz.
-    pub const fn max_hz(self) -> u32 {
+    pub const fn hz(self) -> u32 {
         match self {
             Self::Hz200 => 200,
             Self::Hz400 => 400,
@@ -55,15 +92,33 @@ impl Bandwidth {
 }
 
 #[derive(Clone, Copy)]
-pub enum ClockSource {
-    Internal,
-    External,
+pub enum I2cSpeedMode {
+    Normal,
+    HighSpeed,
 }
 
 #[derive(Clone, Copy)]
-pub enum SyncMode {
-    Internal,
-    External,
+pub enum InstantOnThreshold {
+    Low,
+    High,
+}
+
+#[derive(Clone, Copy)]
+pub enum FilterSettlingTime {
+    Ms370,
+    Ms16,
+}
+
+#[derive(Clone, Copy)]
+pub enum DetectionLowPassFilter {
+    Enabled,
+    Disabled,
+}
+
+#[derive(Clone, Copy)]
+pub enum HighPassFilter {
+    Enabled,
+    Disabled,
 }
 
 #[derive(Clone, Copy)]

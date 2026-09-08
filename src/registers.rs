@@ -45,7 +45,6 @@ impl Register for TimingRegister {
     const ADDRESS: u8 = 0x3D;
 
     type Value = Timing;
-    
 }
 
 impl ReadableRegister for TimingRegister {
@@ -73,8 +72,16 @@ impl ReadableRegister for TimingRegister {
             _ => return None,
         };
 
-        let clock_source = if bits.ext_clk() {ClockSource::External} else {ClockSource::Internal};
-        let sync_mode = if bits.ext_sync() {SyncMode::External} else {SyncMode::Internal};
+        let clock_source = if bits.ext_clk() {
+            ClockSource::External
+        } else {
+            ClockSource::Internal
+        };
+        let sync_mode = if bits.ext_sync() {
+            SyncMode::External
+        } else {
+            SyncMode::Internal
+        };
 
         Some(Timing {
             odr,
@@ -133,7 +140,7 @@ impl Register for ResetRegister {
 impl WritableRegister for ResetRegister {
     fn encode(value: Self::Value) -> u8 {
         match value {
-            ResetCommand::Reset => 0x52
+            ResetCommand::Reset => 0x52,
         }
     }
 }
@@ -149,9 +156,8 @@ pub struct Mesure {
     pub auto_sleep: AutoSleep,
     pub activity_processing: ActivityProcessing,
     pub noise_mode: NoiseMode,
-    pub bandwidth: Bandwidth
+    pub bandwidth: Bandwidth,
 }
-
 
 #[bitfield]
 struct MeasureBits {
@@ -164,7 +170,7 @@ struct MeasureBits {
 
 impl Register for MeasureRegister {
     const ADDRESS: u8 = 0x3E;
-    
+
     type Value = Mesure;
 }
 
@@ -172,8 +178,16 @@ impl ReadableRegister for MeasureRegister {
     fn decode(raw: u8) -> Option<Self::Value> {
         let bits = MeasureBits::from_bytes([raw]);
 
-        let overrange_detection = if bits.user_or_disable() {OverrangeDetection::Disabled} else {OverrangeDetection::Enabled};
-        let auto_sleep = if bits.autosleep() {AutoSleep::Enabled} else {AutoSleep::Disabled};
+        let overrange_detection = if bits.user_or_disable() {
+            OverrangeDetection::Disabled
+        } else {
+            OverrangeDetection::Enabled
+        };
+        let auto_sleep = if bits.autosleep() {
+            AutoSleep::Enabled
+        } else {
+            AutoSleep::Disabled
+        };
 
         let activity_processing = match bits.linkloop() {
             0b00 => ActivityProcessing::Independent,
@@ -182,7 +196,11 @@ impl ReadableRegister for MeasureRegister {
             _ => return None,
         };
 
-        let noise_mode = if bits.low_noise() {NoiseMode::LowNoise} else {NoiseMode::Normal};
+        let noise_mode = if bits.low_noise() {
+            NoiseMode::LowNoise
+        } else {
+            NoiseMode::Normal
+        };
 
         let bandwidth = match bits.bandwidth() {
             0b000 => Bandwidth::Hz200,
@@ -224,7 +242,10 @@ impl WritableRegister for MeasureRegister {
             .with_low_noise(matches!(value.noise_mode, NoiseMode::LowNoise))
             .with_linkloop(linkloop)
             .with_autosleep(matches!(value.auto_sleep, AutoSleep::Enabled))
-            .with_user_or_disable(matches!(value.overrange_detection, OverrangeDetection::Disabled))
+            .with_user_or_disable(matches!(
+                value.overrange_detection,
+                OverrangeDetection::Disabled
+            ))
             .into_bytes()[0]
     }
 }
@@ -330,7 +351,10 @@ impl WritableRegister for PowerCTLRegister {
                 value.instant_on_threshold,
                 InstantOnThreshold::High
             ))
-            .with_filter_settle(matches!(value.filter_settling_time, FilterSettlingTime::Ms16))
+            .with_filter_settle(matches!(
+                value.filter_settling_time,
+                FilterSettlingTime::Ms16
+            ))
             .with_lpf_disable(matches!(
                 value.detection_low_pass_filter,
                 DetectionLowPassFilter::Disabled

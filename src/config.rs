@@ -21,7 +21,7 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Self { 
+        Self {
             odr: OutputDataRate::Hz400,
             wakeup_rate: WakeUpRate::Ms52,
             clock_source: ClockSource::Internal,
@@ -36,7 +36,7 @@ impl Default for Config {
             filter_settling_time: FilterSettlingTime::Ms370,
             detection_low_pass_filter: DetectionLowPassFilter::Enabled,
             high_pass_filter: HighPassFilter::Enabled,
-            power_mode: PowerMode::Standby, 
+            power_mode: PowerMode::Standby,
         }
     }
 }
@@ -50,18 +50,20 @@ impl Config {
         if self.bandwidth.hz() * 2 > self.odr.hz() {
             return Err(ConfigError::NyquistViolation);
         }
- 
+
         Ok(())
     }
-} 
+}
 
 pub struct ConfigBuilder {
-    config: Config
+    config: Config,
 }
 
 impl ConfigBuilder {
     pub fn new() -> Self {
-        Self { config: Config::default() }
+        Self {
+            config: Config::default(),
+        }
     }
 
     pub fn odr(mut self, odr: OutputDataRate) -> Self {
@@ -146,4 +148,3 @@ impl ConfigBuilder {
         self.config
     }
 }
-

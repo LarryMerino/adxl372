@@ -81,5 +81,6 @@ pub mod device;
 pub mod config;
 pub mod params;
 pub(crate) mod registers;
+pub(crate) mod mapping;
 
 pub mod error;

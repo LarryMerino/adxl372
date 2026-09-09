@@ -3,6 +3,7 @@ use embedded_hal::delay::DelayNs;
 use crate::config::Config;
 use crate::error::{DriverResult, Error};
 use crate::interface::RegisterAccess;
+use crate::mapping::RegisterConfig;
 use crate::registers::{
     MeasureRegister, PowerCTLRegister, ReadableRegister, ResetCommand, ResetRegister,
     TimingRegister, WritableRegister,
@@ -43,33 +44,17 @@ where
     }
 
     pub fn read_config(&mut self) -> DriverResult<Config, IO::Error> {
-        let timing = self.read_register::<TimingRegister>()?;
-        let measure = self.read_register::<MeasureRegister>()?;
-        let power_control = self.read_register::<PowerCTLRegister>()?;
 
-        let config = Config {
-            odr: timing.odr,
-            wakeup_rate: timing.wakeup_rate,
-            clock_source: timing.clock_source,
-            sync_mode: timing.sync_mode,
-            overrange_detection: measure.overrange_detection,
-            auto_sleep: measure.auto_sleep,
-            activity_processing: measure.activity_processing,
-            noise_mode: measure.noise_mode,
-            bandwidth: measure.bandwidth,
-            i2c_speed_mode: power_control.i2c_speed_mode,
-            instant_on_threshold: power_control.instant_on_threshold,
-            filter_settling_time: power_control.filter_settling_time,
-            detection_low_pass_filter: power_control.detection_low_pass_filter,
-            high_pass_filter: power_control.high_pass_filter,
-            power_mode: power_control.power_mode,
+        let reg_conf = RegisterConfig {
+            timing: self.read_register::<TimingRegister>()?,
+            measure: self.read_register::<MeasureRegister>()?,
+            power: self.read_register::<PowerCTLRegister>()?
         };
 
-        config
-            .validate()
-            .map_err(Error::<IO::Error>::InvalidConfig)?;
+        Config::try_from(reg_conf)
+            .map_err(Error::InvalidConfig)
 
-        Ok(config)
+        
     }
 
     pub fn reset(&mut self) -> DriverResult<(), IO::Error> {

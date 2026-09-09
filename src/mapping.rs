@@ -1,4 +1,4 @@
-use crate::{config::Config, registers::*};
+use crate::{config::Config, error::ConfigError, registers::*};
 
 pub struct RegisterConfig {
     pub timing: Timing,
@@ -6,13 +6,17 @@ pub struct RegisterConfig {
     pub power: PowerCTL,
 }
 
-impl From<&Config> for RegisterConfig {
-    fn from(value: &Config) -> Self {
-        Self {
+impl TryFrom<&Config> for RegisterConfig {
+    type Error = ConfigError;
+
+    fn try_from(value: &Config) -> Result<Self, Self::Error> {
+        value.validate()?;
+
+        Ok(Self {
             timing: Timing::from(value),
             measure: Mesure::from(value),
             power: PowerCTL::from(value),
-        }
+        })
     }
 }
 

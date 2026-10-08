@@ -57,6 +57,18 @@ where
         
     }
 
+    fn write_config(&mut self, config: &Config) -> DriverResult<(), IO::Error> {
+        
+        let registers = RegisterConfig::try_from(config)
+            .map_err(Error::InvalidConfig)?;
+
+        self.write_register::<TimingRegister>(registers.timing)?;
+        self.write_register::<MeasureRegister>(registers.measure)?;
+        self.write_register::<PowerCTLRegister>(registers.power)?;
+
+        Ok(())
+    }
+
     pub fn reset(&mut self) -> DriverResult<(), IO::Error> {
         self.write_register::<ResetRegister>(ResetCommand::Reset)
     }

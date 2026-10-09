@@ -80,6 +80,10 @@ fn invalid_register_value(address: u8, field: &'static str, value: u8) -> Config
     }
 }
 
+// ---------------------------------------------------------------------
+// TIMING register
+// ---------------------------------------------------------------------
+
 fn encode_odr(value: OutputDataRate) -> u8 {
     match value {
         OutputDataRate::Hz400 => 0b000,
@@ -155,6 +159,10 @@ fn decode_sync_mode(raw: bool) -> SyncMode {
         SyncMode::Internal
     }
 }
+
+// ---------------------------------------------------------------------
+// MEASURE register
+// ---------------------------------------------------------------------
 
 fn encode_overrange_detection(value: OverrangeDetection) -> bool {
     matches!(value, OverrangeDetection::Disabled)
@@ -237,6 +245,10 @@ fn decode_bandwidth(raw: u8) -> Result<Bandwidth, ConfigError> {
         )),
     }
 }
+
+// ---------------------------------------------------------------------
+// POWER CONTROL register
+// ---------------------------------------------------------------------
 
 fn encode_i2c_speed_mode(value: I2cSpeedMode) -> bool {
     matches!(value, I2cSpeedMode::HighSpeed)

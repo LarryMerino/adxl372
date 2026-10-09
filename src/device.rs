@@ -44,23 +44,17 @@ where
     }
 
     pub fn read_config(&mut self) -> DriverResult<Config, IO::Error> {
-
         let reg_conf = RegisterConfig {
             timing: self.read_register::<TimingRegister>()?,
             measure: self.read_register::<MeasureRegister>()?,
-            power: self.read_register::<PowerCTLRegister>()?
+            power: self.read_register::<PowerCTLRegister>()?,
         };
 
-        Config::try_from(reg_conf)
-            .map_err(Error::InvalidConfig)
-
-        
+        Config::try_from(reg_conf).map_err(Error::InvalidConfig)
     }
 
     fn write_config(&mut self, config: &Config) -> DriverResult<(), IO::Error> {
-        
-        let registers = RegisterConfig::try_from(config)
-            .map_err(Error::InvalidConfig)?;
+        let registers = RegisterConfig::try_from(config).map_err(Error::InvalidConfig)?;
 
         self.write_register::<TimingRegister>(registers.timing)?;
         self.write_register::<MeasureRegister>(registers.measure)?;
@@ -77,7 +71,7 @@ where
     where
         R: WritableRegister,
     {
-        let raw = R::encode(value);
+        let raw = R::into_raw(value);
 
         self.interface
             .write_register(R::ADDRESS, raw)
@@ -93,9 +87,6 @@ where
             .read_register(R::ADDRESS)
             .map_err(Error::Interface)?;
 
-        R::decode(raw).ok_or(Error::InvalidRegisterValue {
-            address: R::ADDRESS,
-            value: raw,
-        })
+        Ok(R::from_raw(raw))
     }
 }
